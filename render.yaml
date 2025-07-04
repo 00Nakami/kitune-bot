@@ -3,13 +3,10 @@ services:
     name: kitune-bot
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
     envVars:
       - key: DISCORD_TOKEN
         sync: false
-      - key: PYTHON_VERSION
-        value: 3.11.9  # ✅ Pythonバージョンを明示指定
     disk:
       name: bot-data
       mountPath: /data
