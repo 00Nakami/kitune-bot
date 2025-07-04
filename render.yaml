@@ -3,23 +3,17 @@ services:
     name: kitune-bot
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: ./.render-build.sh
     startCommand: python bot.py
     envVars:
       - key: DISCORD_TOKEN
-        sync: false
-      - key: GIT_REPO_URL
-        sync: false
-      - key: GIT_EMAIL
-        sync: false
-      - key: GIT_NAME
         sync: false
 
   - type: worker
     name: git-auto-backup
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: ./.render-build.sh
     startCommand: python auto_push.py
     envVars:
       - key: GIT_REPO_URL
