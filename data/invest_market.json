@@ -1,0 +1,26 @@
+{
+  "にゃんこ証券": {
+    "price_per_share": 12,
+    "gain_range": [1.1, 1.4],
+    "loss_range": [0.6, 0.9],
+    "wait_seconds": 5
+  },
+  "もちもち銀行": {
+    "price_per_share": 18,
+    "gain_range": [1.2, 1.6],
+    "loss_range": [0.4, 0.8],
+    "wait_seconds": 7
+  },
+  "たこやき産業": {
+    "price_per_share": 8,
+    "gain_range": [1.05, 1.2],
+    "loss_range": [0.7, 0.95],
+    "wait_seconds": 4
+  },
+  "ペンギン重工": {
+    "price_per_share": 20,
+    "gain_range": [1.3, 1.8],
+    "loss_range": [0.3, 0.7],
+    "wait_seconds": 6
+  }
+}
