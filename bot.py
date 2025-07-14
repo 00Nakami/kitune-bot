@@ -73,6 +73,11 @@ async def on_ready():
     except Exception as e:
         print(f"❌ wordwolf の読み込みに失敗: {e}")
 
+    try:
+        await bot.load_extension("invest")
+    except Exception as e:
+        print(f"❌ invest の読み込みに失敗: {e}")
+
     await bot.tree.sync()
     print("✅ スラッシュコマンドを再同期したきつ")
     print(f"✅ ログイン完了: {bot.user}")

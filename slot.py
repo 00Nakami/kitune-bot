@@ -7,10 +7,10 @@ from data import get_coin, update_coin
 SYMBOLS = ["🐵", "🐹", "🐧", "🐺", "🦊"]
 PAYOUTS = {
     "🐵": 3,
-    "🐹": 4,
-    "🐧": 5,
-    "🐺": 6,
-    "🦊": 10
+    "🐹": 3,
+    "🐧": 4,
+    "🐺": 4,
+    "🦊": 5
 }
 
 def setup_slot(bot):
