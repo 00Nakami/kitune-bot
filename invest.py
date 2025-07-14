@@ -5,10 +5,13 @@ import random
 import json
 import os
 import datetime
-import matplotlib
-matplotlib.rcParams['font.family'] = 'Hiragino Sans'
-
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
+
+# 明示的に日本語フォントを指定（Render対応）
+font_path = "assets/fonts/ipaexg.ttf"
+font_prop = font_manager.FontProperties(fname=font_path)
+plt.rcParams["font.family"] = font_prop.get_name()
 
 from data import get_coin, update_coin
 
@@ -181,27 +184,29 @@ class Invest(commands.Cog):
     @app_commands.describe(target="企業名")
     @app_commands.autocomplete(target=target_autocomplete)
     async def invest_chart(self, interaction: discord.Interaction, target: str):
-        if target not in self.history or not self.history[target]:
-            return await interaction.response.send_message("📉 データがないきつ", ephemeral=True)
+      if target not in self.history or not self.history[target]:
+          return await interaction.response.send_message("📉 データがないきつ", ephemeral=True)
 
-        data = self.history[target]
-        times = [datetime.datetime.strptime(p["time"], "%Y-%m-%d %H:%M") for p in data]
-        prices = [p["price"] for p in data]
+      data = self.history[target]
+      times = [datetime.datetime.strptime(p["time"], "%Y-%m-%d %H:%M") for p in data]
+      prices = [p["price"] for p in data]
 
-        plt.figure(figsize=(6, 4))
-        plt.plot(times, prices, marker="o", linestyle="-")
-        plt.title(f"{target} の株価履歴")
-        plt.xlabel("時間")
-        plt.ylabel("株価")
-        plt.xticks(rotation=45)
-        plt.tight_layout()
+      plt.figure(figsize=(6, 4))
+      plt.plot(times, prices, marker="o", linestyle="-")
+      plt.title(f"{target} の株価履歴", fontproperties=font_prop)
+      plt.xlabel("時間", fontproperties=font_prop)
+      plt.ylabel("株価", fontproperties=font_prop)
+      plt.xticks(rotation=45, fontproperties=font_prop)
+      plt.yticks(fontproperties=font_prop)
+      plt.tight_layout()
 
-        path = f"chart_{target}.png"
-        plt.savefig(path)
-        plt.close()
+      path = f"chart_{target}.png"
+      plt.savefig(path)
+      plt.close()
 
-        await interaction.response.send_message(file=discord.File(path))
-        os.remove(path)
+      await interaction.response.send_message(file=discord.File(path))
+      os.remove(path)
+
     @app_commands.command(name="market", description="現在の株価を一覧で見るきつ！")
     async def market(self, interaction: discord.Interaction):
         embed = discord.Embed(title="📈 現在の株価一覧", color=discord.Color.green())
