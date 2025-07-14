@@ -22,7 +22,8 @@ class Help(commands.Cog):
                 "`/roulette` - ルーレットで遊べるきつ\n"
                 "`/janken` - じゃんけんで勝負するきつ！\n"
                 "`/kitumikuji` - 1時間に1回きつみくじを引くきつ\n"
-                "`/tictactoe` - ○×ゲームで対戦するきつ"
+                "`/tictactoe` - ○×ゲームで対戦するきつ\n"
+                "`/wordwolf` - みんなでワードウルフで遊ぶきつ"
             ),
             inline=False
         )
@@ -60,19 +61,7 @@ class Help(commands.Cog):
             inline=False
         )
 
-        # 🔊 TTS（読み上げ）関連
-        embed.add_field(
-            name="🔊 VC読み上げ",
-            value=(
-                "`/join` - VCに接続するきつ\n"
-                "`/autojoin` - VCに自動で接続するようにするきつ\n"
-                "`/leave` - VCから退出するきつ\n"
-                "`/setvoice` - 読み上げの声・話し方を設定するきつ"
-            ),
-            inline=False
-        )
-
-        embed.set_footer(text="⚠️ 一部のコマンドはVCや管理権限が必要な場合があるきつ")
+        embed.set_footer(text="きつねBotで遊んでくれてありがとうきつ")
         await ctx.send(embed=embed)
 
 async def setup(bot):
