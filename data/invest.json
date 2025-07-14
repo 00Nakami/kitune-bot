@@ -1,0 +1,9 @@
+{
+  "123456789012345678": {
+    "total_invested": 10000,
+    "total_result": 2000,
+    "count": 5,
+    "successes": 3,
+    "fails": 2
+  }
+}
