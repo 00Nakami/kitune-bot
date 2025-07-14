@@ -1,13 +1,12 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 
 class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="help", description="Botの使い方を表示するきつ")
-    async def help(self, interaction: discord.Interaction):
+    @commands.hybrid_command(name="help", description="Botの使い方を表示するきつ")
+    async def help(self, ctx: commands.Context):
         embed = discord.Embed(
             title="📖 Botの使い方ガイド",
             description="各カテゴリごとにコマンドをまとめたきつ！\n`/コマンド名`で使ってきつ",
@@ -56,7 +55,7 @@ class Help(commands.Cog):
             name="🎨 画像・抽選",
             value=(
                 "`/avatar` - アイコン画像を表示するきつ\n"
-                "`/gcreate` - ギブアウェイを作るきつ"
+                "`/giveaway` - ギブアウェイを作るきつ"
             ),
             inline=False
         )
@@ -74,7 +73,7 @@ class Help(commands.Cog):
         )
 
         embed.set_footer(text="⚠️ 一部のコマンドはVCや管理権限が必要な場合があるきつ")
-        await interaction.response.send_message(embed=embed)
+        await ctx.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Help(bot))

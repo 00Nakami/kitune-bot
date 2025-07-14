@@ -13,9 +13,23 @@ VOICEVOX_URL = "http://localhost:50021"
 DEFAULT_SPEAKER_ID = 1
 DEFAULT_SPEED = 1.0
 DEFAULT_PITCH = 0.0
+FFMPEG_PATH = "/opt/homebrew/bin/ffmpeg"
 
 voice_settings = {}
 speakers_data = {}
+
+autojoin_config = {}
+AUTOJOIN_FILE = "autojoin_config.json"
+
+def save_autojoin():
+    with open(AUTOJOIN_FILE, "w", encoding="utf-8") as f:
+        json.dump(autojoin_config, f, indent=2)
+
+def load_autojoin():
+    global autojoin_config
+    if os.path.exists(AUTOJOIN_FILE):
+        with open(AUTOJOIN_FILE, "r", encoding="utf-8") as f:
+            autojoin_config = json.load(f)
 
 def save_voice_settings():
     with open("voice_settings.json", "w", encoding="utf-8") as f:
@@ -26,6 +40,19 @@ def load_voice_settings():
     if os.path.exists("voice_settings.json"):
         with open("voice_settings.json", "r", encoding="utf-8") as f:
             voice_settings = json.load(f)
+
+def sanitize_message_for_tts(text: str) -> str:
+    # 絵文字・カスタム絵文字を除去
+    text = re.sub(r'[\U0001F300-\U0001FAFF\u2600-\u26FF\u2700-\u27BF]+', '', text)
+    text = re.sub(r'<a?:[a-zA-Z0-9_]+:\d+>', '', text)
+    # URLを「URL」に置き換え
+    text = re.sub(r'https?://\S+', 'URL', text)
+    # 不要な空白を整形
+    text = re.sub(r'\s+', ' ', text).strip()
+    # 45文字制限 + 以下略
+    if len(text) > 45:
+        text = text[:45] + "、以下略"
+    return text
 
 async def fetch_speakers():
     res = requests.get(f"{VOICEVOX_URL}/speakers")
@@ -49,6 +76,7 @@ def text_to_speech(text, speaker_id, speed=1.0, pitch=0.0):
     query_data = query.json()
     query_data["speedScale"] = speed
     query_data["pitchScale"] = pitch
+
     synthesis = requests.post(
         f"{VOICEVOX_URL}/synthesis",
         params={"speaker": speaker_id},
@@ -66,12 +94,13 @@ class TTS(commands.Cog):
         self.voice_clients = {}
         self.tts_queues = {}
         self.processing = set()
-        self.autojoin_enabled = set()
+        self.channel_map = {}
 
     async def cog_load(self):
         global speakers_data
         speakers_data = await fetch_speakers()
         load_voice_settings()
+        load_autojoin()
 
     async def play_tts(self, guild_id):
         if guild_id in self.processing:
@@ -86,11 +115,12 @@ class TTS(commands.Cog):
             speed = float(settings.get("speed", DEFAULT_SPEED))
             pitch = float(settings.get("pitch", DEFAULT_PITCH))
             speaker_id = get_speaker_id(speaker_name, style_name)
+
             try:
                 path = text_to_speech(text, speaker_id, speed, pitch)
                 voice_client = self.voice_clients[guild_id]
                 voice_client.stop()
-                voice_client.play(discord.FFmpegPCMAudio(path))
+                voice_client.play(discord.FFmpegPCMAudio(path, executable=FFMPEG_PATH))
                 while voice_client.is_playing():
                     await asyncio.sleep(0.5)
             except Exception as e:
@@ -109,20 +139,29 @@ class TTS(commands.Cog):
     async def on_message(self, message):
         if message.author.bot or not message.guild:
             return
-        if message.guild.id not in self.voice_clients:
-            return
-        if message.guild.id not in self.tts_queues:
-            self.tts_queues[message.guild.id] = deque()
 
-        # メンションの置換
+        guild_id = message.guild.id
+        text_id = self.channel_map.get(guild_id)
+
+        if text_id is None or message.channel.id != text_id:
+            return
+
+        if guild_id not in self.voice_clients:
+            return
+
+        if guild_id not in self.tts_queues:
+            self.tts_queues[guild_id] = deque()
+
         content = message.content
         for user in message.mentions:
             content = re.sub(f"<@!?{user.id}>", f"{user.display_name}さん", content)
 
-        self.tts_queues[message.guild.id].append((message.author.id, content))
-        await self.play_tts(message.guild.id)
+        sanitized = sanitize_message_for_tts(content)
+        if sanitized:
+            self.tts_queues[guild_id].append((message.author.id, sanitized))
+            await self.play_tts(guild_id)
 
-    @app_commands.command(name="join", description="VCに参加")
+    @app_commands.command(name="join", description="VCに参加してこのチャンネルを読み上げ対象に設定")
     async def join(self, interaction: discord.Interaction):
         if not interaction.user.voice:
             await interaction.response.send_message("VCに参加してから実行してきつ", ephemeral=True)
@@ -131,7 +170,18 @@ class TTS(commands.Cog):
         channel = interaction.user.voice.channel
         vc = await channel.connect()
         self.voice_clients[interaction.guild.id] = vc
-        await interaction.followup.send(f"{channel.name} に接続したきつ", ephemeral=True)
+        self.channel_map[interaction.guild.id] = interaction.channel.id
+        await interaction.followup.send(f"{channel.name} に接続。{interaction.channel.mention} を読み上げ対象に設定したきつ", ephemeral=True)
+
+    @app_commands.command(name="autojoin", description="自動参加するVCと読み上げるテキストチャンネルを指定")
+    @app_commands.describe(voice_channel="接続するVC", text_channel="読み上げ対象のテキストチャンネル")
+    async def autojoin(self, interaction: discord.Interaction, voice_channel: discord.VoiceChannel, text_channel: discord.TextChannel):
+        autojoin_config[str(interaction.guild.id)] = {
+            "vc_id": voice_channel.id,
+            "text_id": text_channel.id
+        }
+        save_autojoin()
+        await interaction.response.send_message(f"✅ 自動参加VCを {voice_channel.name} に設定、テキストチャンネルを {text_channel.mention} に設定したきつ", ephemeral=True)
 
     @app_commands.command(name="leave", description="VCから退出")
     async def leave(self, interaction: discord.Interaction):
@@ -141,16 +191,6 @@ class TTS(commands.Cog):
             del self.voice_clients[interaction.guild.id]
             await interaction.response.send_message("切断したきつ", ephemeral=True)
 
-    @app_commands.command(name="autojoin", description="自動参加のオンオフを切り替えるきつ")
-    async def autojoin(self, interaction: discord.Interaction):
-        gid = interaction.guild.id
-        if gid in self.autojoin_enabled:
-            self.autojoin_enabled.remove(gid)
-            await interaction.response.send_message("自動参加をオフにしたきつ", ephemeral=True)
-        else:
-            self.autojoin_enabled.add(gid)
-            await interaction.response.send_message("自動参加をオンにしたきつ", ephemeral=True)
-
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if member.bot:
@@ -158,16 +198,19 @@ class TTS(commands.Cog):
 
         guild = member.guild
         guild_id = guild.id
+        config = autojoin_config.get(str(guild_id))
 
-        # 自動参加
-        if guild_id in self.autojoin_enabled:
-            if before.channel is None and after.channel is not None:
+        if config:
+            vc_id = config.get("vc_id")
+            text_id = config.get("text_id")
+            if before.channel is None and after.channel and after.channel.id == vc_id:
                 if guild_id not in self.voice_clients:
                     try:
                         vc = await after.channel.connect()
                         self.voice_clients[guild_id] = vc
+                        self.channel_map[guild_id] = text_id
                     except Exception as e:
-                        print(f"自動参加エラー: {e}")
+                        print(f"自動接続エラー: {e}")
 
         vc = self.voice_clients.get(guild_id)
         if vc and vc.channel:
@@ -176,7 +219,7 @@ class TTS(commands.Cog):
                 try:
                     await vc.disconnect()
                     del self.voice_clients[guild_id]
-                    print(f"👋 {guild.name} から切断したきつ")
+                    print(f"{guild.name} から切断したきつ")
                 except Exception as e:
                     print(f"自動切断エラー: {e}")
             else:

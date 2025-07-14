@@ -18,13 +18,17 @@ from sansuu_hard import setup_sansuu_hard
 from data import load_all_data, get_quotes, add_quote
 from avatar import setup_avatar
 from dentaku import setup_dentaku
-import meigen
 from giveaway import Giveaway
-import discord.opus
-discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.2/lib/libopus.dylib')  # ✅ opusライブラリの読み込み
 from omikuji import setup_omikuji
 from roulette import setup as setup_roulette
 from tictactoe import setup_tictactoe
+
+# 🔻 RenderではVCやVoiceVoxが使えないため、opusライブラリは不要
+# try:
+#     import discord.opus
+#     discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.2/lib/libopus.dylib')
+# except Exception:
+#     pass
 
 # .envファイルからトークン読み込み
 load_dotenv()
@@ -36,79 +40,61 @@ load_all_data()
 # Botの初期設定
 intents = discord.Intents.default()
 intents.message_content = True
-intents.voice_states = True
-bot = commands.Bot(command_prefix='/', intents=intents)
+intents.voice_states = True  # ボイスチャット機能が今は使われてないならFalseでもOK
+bot = commands.Bot(command_prefix='/', intents=intents, help_command=None)
 
 # 起動時イベント
 @bot.event
 async def on_ready():
     await bot.add_cog(Giveaway(bot))
-    
-    # ✅ TTSのCog登録（遅延importで初期化順エラー回避）
-    from tts import setup as setup_tts
-    await setup_tts(bot)
+
+    # 🔻 VoiceVox連携中止中なのでコメントアウト
+    # from tts import setup as setup_tts
+    # await setup_tts(bot)
 
     await setup_roulette(bot)
-    await bot.load_extension("nyan_ranking")
-    await bot.load_extension("help")
+
+    try:
+        await bot.load_extension("help")
+    except Exception as e:
+        print(f"❌ help の読み込みに失敗: {e}")
+
+    try:
+        await bot.load_extension("nyan_ranking")
+    except Exception as e:
+        print(f"❌ nyan_ranking の読み込みに失敗: {e}")
+    
+    try:
+        await bot.load_extension("wordwolf")
+    except Exception as e:
+        print(f"❌ wordwolf の読み込みに失敗: {e}")
 
     await bot.tree.sync()
+    print("✅ スラッシュコマンドを再同期したきつ")
     print(f"✅ ログイン完了: {bot.user}")
 
-# メッセージ監視（名言GIF専用）
-@bot.event
-async def on_message(message: discord.Message):
-    if message.author.bot:
-        return
-
-    # 名言GIF用（@Botへのリプライ）
-    if message.reference and bot.user in message.mentions:
-        try:
-            ref_msg = await message.channel.fetch_message(message.reference.message_id)
-            original_text = ref_msg.content.strip()
-            author = ref_msg.author
-
-            if not original_text:
-                await message.channel.send("⚠️ リプライ先のメッセージにテキストがないきつ")
-                return
-
-            # data.py経由で名言を保存
-            add_quote(author.id, {
-                "text": original_text,
-                "timestamp": str(ref_msg.created_at)
-            })
-
-            user_quotes = get_quotes(author.id)
-            texts = [q["text"] for q in user_quotes]
-            timestamps = [q["timestamp"] for q in user_quotes]
-
-            await meigen.create_credits_gif_and_send(
-                texts,
-                message.channel,
-                bot.user,
-                author,
-                timestamps,
-                ref_msg
-            )
-
-        except Exception as e:
-            await message.channel.send(f"❌ エラーが発生したきつ: {e}")
-
-    await bot.process_commands(message)
-
-# 各種コマンドを登録
-setup_janken(bot)
-setup_nyan(bot)
-setup_slot(bot)
-bj.setup_bj(bot)
-give.setup_give(bot)
-setup_sansuu_easy(bot)
-setup_sansuu_normal(bot)
-setup_sansuu_hard(bot)
-setup_avatar(bot)
-setup_dentaku(bot)
-setup_omikuji(bot)
-setup_tictactoe(bot)
+# 各種コマンド登録（非同期が必要なものには await を付ける）
+async def setup_all_commands():
+    setup_janken(bot)
+    setup_nyan(bot)
+    setup_slot(bot)
+    bj.setup_bj(bot)
+    await give.setup_give(bot)
+    setup_sansuu_easy(bot)
+    setup_sansuu_normal(bot)
+    setup_sansuu_hard(bot)
+    setup_avatar(bot)
+    setup_dentaku(bot)
+    setup_omikuji(bot)
+    setup_tictactoe(bot)
 
 # Bot起動
-bot.run(TOKEN)
+if TOKEN:
+    async def main():
+        async with bot:
+            await setup_all_commands()
+            await bot.start(TOKEN)
+
+    asyncio.run(main())
+else:
+    print("❌ DISCORD_TOKEN が .env または Render の環境変数に設定されていないきつ")

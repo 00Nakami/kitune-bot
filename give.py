@@ -1,8 +1,8 @@
 from discord import app_commands
 import discord
-from data import get_coin, update_coin
+from data import get_coin, update_coin, save_all_data  # ← 修正済み
 
-def setup_give(bot):
+async def setup_give(bot):
     @bot.tree.command(name="give", description="他のユーザーににゃんにゃんを渡すきつ")
     @app_commands.describe(user="渡す相手", amount="渡すにゃんにゃんの数")
     async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
@@ -27,6 +27,7 @@ def setup_give(bot):
 
         update_coin(giver.id, -amount)
         update_coin(user.id, amount)
+        save_all_data()  # ← 修正済み
 
         await interaction.response.send_message(
             f"{giver.mention} さんが {user.mention} さんに {amount} にゃんにゃんを渡したきつ！"

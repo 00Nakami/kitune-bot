@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ui import View, Button
 import random
-from data import get_coin, update_coin, save_data
+from data import get_coin, update_coin  # ← 修正ここ
 
 SUITS = ["♠", "♥", "♦", "♣"]
 RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]

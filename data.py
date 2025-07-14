@@ -1,8 +1,8 @@
 import os
 import json
 
-# 永続化ディレクトリ（Render 用）
-BASE_DIR = "/data"
+# プロジェクト内の data ディレクトリを使用（Render無料プラン対応）
+BASE_DIR = os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(BASE_DIR, exist_ok=True)
 
 # 各ファイルのパス
@@ -61,6 +61,9 @@ def update_coin(user_id: int, amount: int):
     user_id_str = str(user_id)
     coins[user_id_str] = coins.get(user_id_str, 0) + amount
     save_all_data()
+
+def get_all_coins():
+    return coins
 
 # --------- 名言データ操作 ---------
 def get_quotes(user_id: int):

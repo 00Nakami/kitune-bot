@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from data import coins  # 所持にゃんにゃんデータ（辞書）
+from data import get_all_coins
+import asyncio
 
 class NyanRanking(commands.Cog):
     def __init__(self, bot):
@@ -9,28 +10,38 @@ class NyanRanking(commands.Cog):
 
     @app_commands.command(name="nyan_ranking", description="にゃんにゃんの所持金ランキングを表示するきつ")
     async def nyan_ranking(self, interaction: discord.Interaction):
-        # 上位10名を取得
-        sorted_coins = sorted(coins.items(), key=lambda x: x[1], reverse=True)[:10]
-        description = ""
+        all_coins = get_all_coins()
 
-        for i, (uid, amount) in enumerate(sorted_coins, 1):
-            try:
-                user = self.bot.get_user(int(uid)) or await self.bot.fetch_user(int(uid))
-                name = user.name if user else f"不明なユーザー({uid})"
-                description += f"**{i}位** {name}：💰 {amount} にゃんにゃん\n"
-            except Exception:
-                description += f"**{i}位** 不明なユーザー({uid})：💰 {amount} にゃんにゃん\n"
+        if not all_coins:
+            await interaction.response.send_message("ランキングデータがないきつ", ephemeral=True)
+            return
 
-        if not description:
-            description = "ランキングデータがないきつ"
+        sorted_coins = sorted(all_coins.items(), key=lambda x: x[1], reverse=True)[:10]
 
         embed = discord.Embed(
             title="🏆 にゃんにゃんランキング TOP10",
-            description=description,
             color=discord.Color.orange()
         )
+
+        async def get_user_name(uid: int):
+            user = self.bot.get_user(uid)
+            if user:
+                return user.name
+            try:
+                user = await self.bot.fetch_user(uid)
+                return user.name
+            except:
+                return f"不明なユーザー({uid})"
+
+        # ユーザー名の取得を並列処理（最大10件なので問題なし）
+        user_names = await asyncio.gather(*(get_user_name(int(uid)) for uid, _ in sorted_coins))
+
+        description = ""
+        for i, ((uid, amount), name) in enumerate(zip(sorted_coins, user_names), 1):
+            description += f"**{i}位** {name}：💰 {amount} にゃんにゃん\n"
+
+        embed.description = description
         await interaction.response.send_message(embed=embed)
 
-# ✅ setup関数でCogを登録
 async def setup(bot):
     await bot.add_cog(NyanRanking(bot))

@@ -3,28 +3,8 @@ services:
     name: kitune-bot
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python bot.py
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python bot.py"
     envVars:
       - key: DISCORD_TOKEN
-        sync: false
-      - key: GIT_REPO_URL
-        sync: false
-      - key: GIT_EMAIL
-        sync: false
-      - key: GIT_NAME
-        sync: false
-
-  - type: worker
-    name: git-auto-backup
-    env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python autopush.py
-    envVars:
-      - key: GIT_REPO_URL
-        sync: false
-      - key: GIT_EMAIL
-        sync: false
-      - key: GIT_NAME
-        sync: false
+        value: あなたのトークンをRender管理画面で設定（この行はRenderで手動設定でもOK）

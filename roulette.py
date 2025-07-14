@@ -4,10 +4,31 @@ from discord import app_commands
 import random
 import asyncio
 from functools import partial
-from data import get_coin, update_coin  # ✅ 共通通貨管理
+from data import get_coin, update_coin
 
-COLOR_POOL = ["red"] * 49 + ["black"] * 49 + ["green"] * 2
 BET_AMOUNTS = [100, 500, 1000, 5000, 10000]
+
+AVAILABLE_RESULTS = {
+    0: "green",
+    1: "red",
+    3: "red",
+    8: "black",
+    18: "red",
+    20: "black",
+    33: "black"
+}
+
+WEIGHTED_NUMBERS = [0] + [n for n in AVAILABLE_RESULTS if n != 0 for _ in range(6)]
+
+GIF_URLS = {
+    0: "https://tenor.com/pUWuyIYFYzA.gif",
+    1: "https://tenor.com/fvC3S7aREaV.gif",
+    3: "https://tenor.com/tZODNzQJINP.gif",
+    8: "https://tenor.com/hp7TQNQHAV7.gif",
+    18: "https://tenor.com/jJOVx2y512f.gif",
+    20: "https://tenor.com/tFFM79kVPxR.gif",
+    33: "https://tenor.com/euI5d0Bc43z.gif"
+}
 
 def get_emoji(color):
     return {"red": "🔴", "black": "⚫", "green": "🟢"}.get(color, "❓")
@@ -37,29 +58,31 @@ class BetAmount(discord.ui.View):
             return
 
         current = self.roulette_view.bet_amounts.get(interaction.user.id, 0)
-        await self.roulette_view.set_bet_amount(interaction.user, current + amount)
+        self.roulette_view.bet_amounts[interaction.user.id] = current + amount
         await self.roulette_view.update_bet_embed()
         await interaction.response.defer()
-
         self.stop()
-        try:
-            await interaction.message.delete()
-        except discord.NotFound:
-            pass
+        if interaction.message:
+            try:
+                await interaction.message.delete()
+            except discord.NotFound:
+                pass
 
     async def cancel_callback(self, interaction: discord.Interaction):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("これはあなた専用のボタンきつ", ephemeral=True)
             return
+
         self.roulette_view.bet_amounts.pop(interaction.user.id, None)
         self.roulette_view.bet_colors.pop(interaction.user.id, None)
         await self.roulette_view.update_bet_embed()
         await interaction.response.send_message("ベットをキャンセルしたきつ", ephemeral=True)
         self.stop()
-        try:
-            await interaction.message.delete()
-        except discord.NotFound:
-            pass
+        if interaction.message:
+            try:
+                await interaction.message.delete()
+            except discord.NotFound:
+                pass
 
 class RouletteView(discord.ui.View):
     def __init__(self, host_user):
@@ -80,21 +103,17 @@ class RouletteView(discord.ui.View):
                     color = self.bet_colors[uid]
                     amount = self.bet_amounts[uid]
                     lines.append(f"{user.mention}：{get_emoji(color)} {color.upper()} | 💰 {amount} にゃんにゃん")
-                except:
-                    continue
+                except Exception:
+                    lines.append(f"不明なユーザー（{uid}）：{get_emoji(color)} {color.upper()} | 💰 {amount} にゃんにゃん")
         embed.description = "\n".join(lines) or "まだ誰もベットしてないきつ"
         await self.message.edit(embed=embed, view=self)
-
-    async def set_bet_amount(self, user, amount):
-        self.bet_amounts[user.id] = amount
 
     async def handle_bet(self, interaction, color):
         uid = interaction.user.id
         self.bet_colors[uid] = color
         if uid not in self.bet_amounts:
-            await interaction.response.send_message("💰 ベット額を選んできつ", ephemeral=True)
             view = BetAmount(self, uid)
-            await interaction.followup.send("金額を選んできつ：", view=view, ephemeral=True)
+            await interaction.response.send_message("💰 金額を選んできつ：", view=view, ephemeral=True)
         else:
             await interaction.response.defer()
             await self.update_bet_embed()
@@ -121,59 +140,47 @@ class RouletteView(discord.ui.View):
         await self.spin(interaction.channel)
 
     async def spin(self, channel):
-        # 正しい確率で出現するように修正
-        display = ["🔴"] * 49 + ["⚫"] * 49 + ["🟢"] * 2
-        pattern = ["🔴", "⚫", "🟢", "🔴", "⚫"]
-        msg = await channel.send("🎲 ルーレットを回しています...")
+        number = random.choice(WEIGHTED_NUMBERS)
+        color = AVAILABLE_RESULTS[number]
+        emoji = get_emoji(color)
+        gif_url = GIF_URLS.get(number)
 
-        sequence = [0.01] * 10 + [0.02] * 5 + [0.5] * 3 + [1] * 2
+        await channel.send(f"🎲 結果を表示中...\n{gif_url}" if gif_url else "🎲 結果を表示中...")
 
-        # ✅ 抽選を先に行う
-        result_color = random.choice(COLOR_POOL)
-        result_emoji = get_emoji(result_color)
-
-        for i, interval in enumerate(sequence):
-            if i < len(sequence) - 1:
-                pattern = pattern[1:] + [random.choice(display)]
-            else:
-                pattern = pattern[1:] + [result_emoji]  # 最後は確定色
-
-            display_text = "".join(pattern[:2]) + "|" + pattern[2] + "|" + "".join(pattern[3:])
-            await msg.edit(content=f"🎰 {display_text}")
-            await asyncio.sleep(interval)
-
-        # 結果判定
-        center = pattern[2]
-        result_color = {"🔴": "red", "⚫": "black", "🟢": "green"}[center]
+        await asyncio.sleep(5)
 
         result_lines = []
-        for uid, color in self.bet_colors.items():
+        for uid, bet_color in self.bet_colors.items():
             if uid in self.bet_amounts:
                 amount = self.bet_amounts[uid]
-                win = color == result_color
+                win = bet_color == color
                 if win:
-                    multiplier = 50 if color == "green" else 2
+                    multiplier = 36 if color == "green" else 2
                     update_coin(uid, amount * (multiplier - 1))
                     outcome = f"✅ 勝利！{multiplier}倍！(+{amount * (multiplier - 1)})"
                 else:
                     update_coin(uid, -amount)
                     outcome = f"❌ はずれ (-{amount})"
                 balance = get_coin(uid)
-                user = self.bot.get_user(uid) or await self.bot.fetch_user(uid)
-                result_lines.append(
-                    f"{user.mention}：{get_emoji(color)} {color.upper()} | 💰 {amount} にゃんにゃん → {outcome}\n"
-                    f"　　📦 現在の残高：{balance} にゃんにゃん"
-                )
+                try:
+                    user = self.bot.get_user(uid) or await self.bot.fetch_user(uid)
+                    result_lines.append(
+                        f"{user.mention}：{get_emoji(bet_color)} {bet_color.upper()} | 💰 {amount} → {outcome}｜残高：{balance}"
+                    )
+                except:
+                    result_lines.append(
+                        f"不明なユーザー({uid})：{get_emoji(bet_color)} {bet_color.upper()} → {outcome}｜残高：{balance}"
+                    )
 
         embed = discord.Embed(
             title="🎯 ルーレット結果",
             description="\n".join(result_lines),
-            color=discord.Color.red() if result_color == "red" else
-                  discord.Color.green() if result_color == "green" else
+            color=discord.Color.red() if color == "red" else
+                  discord.Color.green() if color == "green" else
                   discord.Color.dark_gray()
         )
-        embed.add_field(name="🎲 出目", value=f"{center} {result_color.upper()}", inline=False)
-        await msg.edit(content="", embed=embed)
+        embed.add_field(name="🎲 出目", value=f"{emoji} {number} ({color.upper()})", inline=False)
+        await channel.send(embed=embed)
 
 class Roulette(commands.Cog):
     def __init__(self, bot):

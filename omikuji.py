@@ -13,11 +13,12 @@ last_omikuji_time = {}
 def setup_omikuji(bot: commands.Bot):
     @bot.tree.command(name="kitumikuji", description="今日の運勢を占ってにゃんにゃんをゲットするきつ！")
     async def omikuji(interaction: discord.Interaction):
-        user_id = str(interaction.user.id)
+        user_id = interaction.user.id
+        user_id_str = str(user_id)  # ⏱ メモリキャッシュ用のキーとしては str を使用
         now = time.time()
 
         # クールダウンチェック
-        last_time = last_omikuji_time.get(user_id, 0)
+        last_time = last_omikuji_time.get(user_id_str, 0)
         if now - last_time < COOLDOWN_SECONDS:
             remaining = int(COOLDOWN_SECONDS - (now - last_time))
             minutes = remaining // 60
@@ -30,22 +31,22 @@ def setup_omikuji(bot: commands.Bot):
 
         # おみくじ内容と報酬
         fortunes = [
-            ("🌟 大狐", "超ラッキー！", 1000),
-            ("😊 中狐", "なかなか良い日！", 500),
-            ("🙂 小狐", "ちょっと嬉しいことがあるかも！", 200),
-            ("😐 狐", "平穏な1日になる予感", 100),
-            ("😶 末狐", "まぁまぁかな", 50),
-            ("😢 苗", "ちょっと注意が必要かも", 10),
-            ("💀 大苗", "今日は慎重に…", 0),
+            ("🌟 大狐", "きた！", 1000),
+            ("😊 中狐", "もうちょいなんだよなー", 500),
+            ("🙂 小狐", "ほい小狐", 200),
+            ("😐 狐", "えこれめっちゃいい", 100),
+            ("😶 末狐", "ふーん", 50),
+            ("😢 苗", "最悪杉", 10),
+            ("💀 大苗", "オワッタ", 0),
         ]
 
         fortune, description, reward = random.choice(fortunes)
 
-        # コイン更新
+        # にゃんにゃんコイン更新
         update_coin(user_id, reward)
         new_coin = get_coin(user_id)
 
-        # メッセージ構築
+        # 埋め込みメッセージ構築
         embed = discord.Embed(
             title=f"🎴 おみくじの結果：{fortune}",
             description=f"{description}\n**{'+' if reward >= 0 else ''}{reward} にゃんにゃん**",
@@ -56,4 +57,4 @@ def setup_omikuji(bot: commands.Bot):
         await interaction.response.send_message(embed=embed)
 
         # 最終実行時間を記録
-        last_omikuji_time[user_id] = now
+        last_omikuji_time[user_id_str] = now

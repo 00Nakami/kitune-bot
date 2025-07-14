@@ -70,7 +70,7 @@ class SlotView(discord.ui.View):
 
     async def stop_slot(self, interaction: discord.Interaction, index: int):
         if interaction.user != self.user:
-            await interaction.response.send_message("これはあなたのスロットきつ！", ephemeral=True)
+            await interaction.response.send_message("これはあなたのスロットじゃないきつ！", ephemeral=True)
             return
 
         if self.stopped[index]:

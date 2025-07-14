@@ -1,8 +1,11 @@
 import discord
 from discord import app_commands
+from discord.ext import commands
+import random
 from data import get_coin, update_coin
+from typing import Optional
 
-def setup_janken(bot):
+def setup_janken(bot: commands.Bot):
     @bot.tree.command(name="janken", description="他の人とPvPじゃんけん！")
     @app_commands.describe(opponent="対戦相手", bet="ベット額（にゃんにゃん）")
     async def janken(interaction: discord.Interaction, opponent: discord.Member, bet: int):
@@ -17,20 +20,20 @@ def setup_janken(bot):
             await interaction.response.send_message("どちらかのにゃんにゃんが足りないきつ！", ephemeral=True)
             return
 
+        view = AcceptView(p1, p2, bet)
         await interaction.response.send_message(
             f"{p2.mention} さん、{p1.display_name} さんから PvPじゃんけん（ベット: {bet} にゃんにゃん）の申し込みきつ。承諾するきつか？",
-            ephemeral=False
+            view=view
         )
-        view = AcceptView(p1, p2, bet, interaction)
-        await interaction.followup.send(view=view)
+        view.message = await interaction.original_response()
 
 class AcceptView(discord.ui.View):
-    def __init__(self, p1, p2, bet, orig_interaction):
+    def __init__(self, p1, p2, bet):
         super().__init__(timeout=30)
         self.p1 = p1
         self.p2 = p2
         self.bet = bet
-        self.orig_interaction = orig_interaction
+        self.message: Optional[discord.Message] = None
 
     @discord.ui.button(label="はい", style=discord.ButtonStyle.success)
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -39,8 +42,7 @@ class AcceptView(discord.ui.View):
             return
 
         try:
-            await interaction.message.delete()
-            await self.orig_interaction.delete_original_response()
+            await self.message.delete()
         except discord.NotFound:
             pass
 
@@ -52,8 +54,7 @@ class AcceptView(discord.ui.View):
     @discord.ui.button(label="いいえ", style=discord.ButtonStyle.danger)
     async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
-            await interaction.message.delete()
-            await self.orig_interaction.delete_original_response()
+            await self.message.delete()
         except discord.NotFound:
             pass
 
@@ -67,7 +68,8 @@ class JankenView(discord.ui.View):
         self.p2 = p2
         self.bet = bet
         self.hands = {}
-        self.ui_message: discord.Message | None = None
+        self.result_shown = False
+        self.ui_message: Optional[discord.Message] = None
 
     @discord.ui.button(label="グー ✊", style=discord.ButtonStyle.primary)
     async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -94,7 +96,8 @@ class JankenView(discord.ui.View):
         self.hands[user.id] = hand
         await interaction.response.send_message(f"{user.display_name} が選んだきつ！", ephemeral=True)
 
-        if len(self.hands) == 2:
+        if len(self.hands) == 2 and not self.result_shown:
+            self.result_shown = True  # ここで2回出るのを防ぐ
             h1 = self.hands[self.p1.id]
             h2 = self.hands[self.p2.id]
 
@@ -102,7 +105,6 @@ class JankenView(discord.ui.View):
 
             if h1 == h2:
                 result += "**あいこ！もう1試合始めるきつ！**"
-                await interaction.followup.send(result)
 
                 if self.ui_message:
                     try:
@@ -110,12 +112,15 @@ class JankenView(discord.ui.View):
                     except discord.NotFound:
                         pass
 
+                await interaction.followup.send(result)
+
                 new_view = JankenView(self.p1, self.p2, self.bet)
                 new_msg = await interaction.channel.send("再試合！手を選んできつ：", view=new_view)
                 new_view.ui_message = new_msg
                 self.stop()
                 return
 
+            # 勝敗処理
             if (
                 (h1 == "グー" and h2 == "チョキ") or
                 (h1 == "チョキ" and h2 == "パー") or

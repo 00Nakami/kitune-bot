@@ -149,7 +149,7 @@ class Giveaway(commands.Cog):
         self.winners = {}           # message.id -> int
         self.hosts = {}             # message.id -> str (host user mention)
 
-    @app_commands.command(name="gcreate", description="ギブアウェイを作成")
+    @app_commands.command(name="giveaway", description="ギブアウェイを作成")
     async def gcreate(self, interaction: discord.Interaction):
         modal = GiveawayModal(self, interaction)
         await interaction.response.send_modal(modal)
