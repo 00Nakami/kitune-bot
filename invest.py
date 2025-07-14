@@ -10,7 +10,6 @@ from data import get_coin, update_coin
 
 INVEST_FILE = "invest_stats.json"
 
-# 投資先データ定義
 INVEST_OPTIONS = {
     "にゃんこ証券": {
         "price_per_share": 12,
@@ -72,12 +71,25 @@ class Invest(commands.Cog):
             self.invest_data[user_id]["fails"] += 1
         save_invest_data(self.invest_data)
 
+    async def target_autocomplete(self, interaction: discord.Interaction, current: str):
+        return [
+            app_commands.Choice(name=name, value=name)
+            for name in INVEST_OPTIONS
+            if current.lower() in name.lower()
+        ]
+
     @app_commands.command(name="invest", description="にゃんにゃんを投資してみよう！")
     @app_commands.describe(
-        target="投資先（省略でランダム）",
-        shares="株数（100株単位）"
+        shares="株数（100株単位）",
+        target="投資先"
     )
-    async def invest(self, interaction: discord.Interaction, shares: int, target: str = None):
+    @app_commands.autocomplete(target=target_autocomplete)
+    async def invest(
+        self,
+        interaction: discord.Interaction,
+        shares: int,
+        target: str
+    ):
         user = interaction.user
         user_id = str(user.id)
         current = get_coin(user_id)
@@ -86,12 +98,9 @@ class Invest(commands.Cog):
             await interaction.response.send_message("❌ 株数は100株単位で指定するきつ！", ephemeral=True)
             return
 
-        if target:
-            if target not in INVEST_OPTIONS:
-                await interaction.response.send_message("❌ 投資先が無効きつ！", ephemeral=True)
-                return
-        else:
-            target = random.choice(list(INVEST_OPTIONS.keys()))
+        if target not in INVEST_OPTIONS:
+            await interaction.response.send_message("❌ 投資先が無効きつ！", ephemeral=True)
+            return
 
         option = INVEST_OPTIONS[target]
         total_cost = shares * option["price_per_share"]
