@@ -5,6 +5,8 @@ from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
 import asyncio
+from threading import Thread
+from flask import Flask
 
 # モジュールのインポート
 from janken import setup_janken
@@ -23,13 +25,6 @@ from omikuji import setup_omikuji
 from roulette import setup as setup_roulette
 from tictactoe import setup_tictactoe
 
-# 🔻 RenderではVCやVoiceVoxが使えないため、opusライブラリは不要
-# try:
-#     import discord.opus
-#     discord.opus.load_opus('/opt/homebrew/Cellar/opus/1.5.2/lib/libopus.dylib')
-# except Exception:
-#     pass
-
 # .envファイルからトークン読み込み
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -40,15 +35,24 @@ load_all_data()
 # Botの初期設定
 intents = discord.Intents.default()
 intents.message_content = True
-intents.voice_states = True  # ボイスチャット機能が今は使われてないならFalseでもOK
+intents.voice_states = True  # VC未使用なら False でもOK
 bot = commands.Bot(command_prefix='/', intents=intents, help_command=None)
+
+# Flaskアプリ（Render用にポートをバインドするためだけに使う）
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "Bot is running!"
+
+def run_flask():
+    app.run(host="0.0.0.0", port=10000)
 
 # 起動時イベント
 @bot.event
 async def on_ready():
     await bot.add_cog(Giveaway(bot))
 
-    # 🔻 VoiceVox連携中止中なのでコメントアウト
     # from tts import setup as setup_tts
     # await setup_tts(bot)
 
@@ -73,7 +77,7 @@ async def on_ready():
     print("✅ スラッシュコマンドを再同期したきつ")
     print(f"✅ ログイン完了: {bot.user}")
 
-# 各種コマンド登録（非同期が必要なものには await を付ける）
+# 各種コマンド登録
 async def setup_all_commands():
     setup_janken(bot)
     setup_nyan(bot)
@@ -88,8 +92,12 @@ async def setup_all_commands():
     setup_omikuji(bot)
     setup_tictactoe(bot)
 
-# Bot起動
+# メイン処理
 if TOKEN:
+    # Flaskをバックグラウンドで起動
+    t = Thread(target=run_flask)
+    t.start()
+
     async def main():
         async with bot:
             await setup_all_commands()
