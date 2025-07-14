@@ -1,11 +1,13 @@
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 import random
 import json
 import os
-import asyncio
 import datetime
+import matplotlib
+matplotlib.rcParams['font.family'] = 'Hiragino Sans'
+
 import matplotlib.pyplot as plt
 
 from data import get_coin, update_coin
@@ -13,19 +15,36 @@ from data import get_coin, update_coin
 INVEST_FILE = "invest_stats.json"
 MARKET_FILE = "invest_market.json"
 HISTORY_FILE = "market_history.json"
+PORTFOLIO_FILE = "invest_portfolio.json"
 
 DEFAULT_MARKET = {
-    "にゃんこ証券": {"price_per_share": 12, "gain_range": [1.1, 1.4], "loss_range": [0.6, 0.9], "wait_seconds": 5},
-    "もちもち銀行": {"price_per_share": 18, "gain_range": [1.2, 1.6], "loss_range": [0.4, 0.8], "wait_seconds": 7},
-    "たこやき産業": {"price_per_share": 8, "gain_range": [1.05, 1.2], "loss_range": [0.7, 0.95], "wait_seconds": 4},
-    "ペンギン重工": {"price_per_share": 20, "gain_range": [1.3, 1.8], "loss_range": [0.3, 0.7], "wait_seconds": 6}
+    "のば鉄道": {"price_per_share": 100, "volatility": 0.2},
+    "くるあパティスリー": {"price_per_share": 50, "volatility": 0.3},
+    "きつね製麺": {"price_per_share": 10, "volatility": 0.1},
+    "なえくん水族館": {"price_per_share": 30, "volatility": 0.4},
+    "しし動物園": {"price_per_share": 40, "volatility": 0.2},
+    "はむっちペットショップ": {"price_per_share": 60, "volatility": 0.1},
+    "くろねこ画廊": {"price_per_share": 80, "volatility": 0.3},
+    "やまとん寿司": {"price_per_share": 60, "volatility": 0.3},
+    "あゆかは精肉店": {"price_per_share": 90, "volatility": 0.4},
+    "ぴー貴族": {"price_per_share": 70, "volatility": 0.2},
 }
 
 def load_json(file, default={}):
     if not os.path.exists(file):
         save_json(file, default)
-    with open(file, "r") as f:
-        return json.load(f)
+    try:
+        with open(file, "r") as f:
+            data = json.load(f)
+            if not isinstance(data, dict):
+                print(f"⚠️ {file} の構造が不正です。初期化します。")
+                save_json(file, default)
+                return default
+            return data
+    except Exception as e:
+        print(f"⚠️ {file} 読み込み失敗: {e}")
+        save_json(file, default)
+        return default
 
 def save_json(file, data):
     with open(file, "w") as f:
@@ -34,122 +53,136 @@ def save_json(file, data):
 class Invest(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.invest_data = load_json(INVEST_FILE)
-        self.market = load_json(MARKET_FILE)
+        self.market = load_json(MARKET_FILE, DEFAULT_MARKET.copy())
         self.history = load_json(HISTORY_FILE, {k: [] for k in DEFAULT_MARKET})
+        self.invest_data = load_json(INVEST_FILE)
+        self.portfolio = load_json(PORTFOLIO_FILE)
+        self.update_prices.start()
+
+    def cog_unload(self):
+        self.update_prices.cancel()
 
     def save_all(self):
-        save_json(INVEST_FILE, self.invest_data)
         save_json(MARKET_FILE, self.market)
         save_json(HISTORY_FILE, self.history)
+        save_json(INVEST_FILE, self.invest_data)
+        save_json(PORTFOLIO_FILE, self.portfolio)
 
-    def update_stats(self, user_id: str, amount: int, result: int):
-        user_id = str(user_id)
-        stats = self.invest_data.setdefault(user_id, {
-            "total_invested": 0, "total_result": 0, "count": 0, "successes": 0, "fails": 0
-        })
-        stats["total_invested"] += amount
-        stats["total_result"] += result
-        stats["count"] += 1
-        if result > 0:
-            stats["successes"] += 1
-        elif result < 0:
-            stats["fails"] += 1
-
-    def log_price(self, target):
+    def log_price(self):
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        price = self.market[target]["price_per_share"]
-        self.history[target].append({"time": now, "price": price})
-        self.history[target] = self.history[target][-30:]  # 直近30件に制限
+        for name, info in self.market.items():
+            self.history.setdefault(name, []).append({"time": now, "price": info["price_per_share"]})
+            self.history[name] = self.history[name][-1440:]
+
+    @tasks.loop(minutes=1)
+    async def update_prices(self):
+        for name, info in self.market.items():
+            factor = random.uniform(1 - info["volatility"], 1 + info["volatility"])
+            new_price = max(1, int(info["price_per_share"] * factor))
+            info["price_per_share"] = int(new_price)
+        self.log_price()
+        self.save_all()
 
     async def target_autocomplete(self, interaction: discord.Interaction, current: str):
-        return [app_commands.Choice(name=name, value=name) for name in self.market if current.lower() in name.lower()][:25]
+        try:
+          market_data = load_json(MARKET_FILE, DEFAULT_MARKET.copy())
 
-    @app_commands.command(name="invest", description="にゃんにゃんを投資してみよう！")
-    @app_commands.describe(shares="株数（100株単位）", target="投資先")
+          choices = []
+          for name, info in market_data.items():
+            if not isinstance(info, dict):
+                continue
+            price = info.get("price_per_share")
+            if not isinstance(price, (int, float)):
+                continue
+            if current.lower() in name.lower():
+                display_name = f"{name}（{price} にゃんにゃん/株）"
+                choices.append(app_commands.Choice(name=display_name[:100], value=name))
+
+          return choices[:25]
+        except Exception as e:
+          print(f"[Autocomplete Error]: {e}")
+          return []
+
+    @app_commands.command(name="invest", description="にゃんにゃんで株を購入するきつ！")
+    @app_commands.describe(target="企業名", shares="株数（100株単位）")
     @app_commands.autocomplete(target=target_autocomplete)
-    async def invest(self, interaction: discord.Interaction, shares: int, target: str):
+    async def invest(self, interaction: discord.Interaction, target: str, shares: int):
         user_id = str(interaction.user.id)
-        current = get_coin(user_id)
-
         if shares <= 0 or shares % 100 != 0:
-            return await interaction.response.send_message("❌ 株数は100株単位で指定してきつ！", ephemeral=True)
+            return await interaction.response.send_message("❌ 株数は100株単位できつ！", ephemeral=True)
 
         if target not in self.market:
-            return await interaction.response.send_message("❌ 投資先が無効きつ！", ephemeral=True)
+            return await interaction.response.send_message("❌ 無効な企業名きつ", ephemeral=True)
 
-        info = self.market[target]
-        cost = shares * info["price_per_share"]
+        price = self.market[target]["price_per_share"]
+        cost = shares * price
+        balance = get_coin(user_id)
 
-        if current < cost:
+        if balance < cost:
             return await interaction.response.send_message("❌ にゃんにゃんが足りないきつ！", ephemeral=True)
 
         update_coin(user_id, -cost)
-        await interaction.response.send_message(f"📤 {target} に {shares} 株（{cost} にゃんにゃん）を投資したきつ…結果を待つきつ…（{info['wait_seconds']}秒）")
+        self.portfolio.setdefault(user_id, {}).setdefault(target, 0)
+        self.portfolio[user_id][target] += shares
 
-        await asyncio.sleep(info["wait_seconds"])
-
-        outcome = random.choices(["gain", "loss", "double", "fail"], weights=[35, 35, 20, 10])[0]
-        result = 0
-
-        if outcome == "gain":
-            result = int(cost * random.uniform(*info["gain_range"]))
-            info["price_per_share"] += 1
-            msg = f"📈 {target} が上昇！{result - cost} にゃんにゃんの利益きつ！"
-        elif outcome == "double":
-            result = cost * 2
-            info["price_per_share"] += 2
-            msg = f"💹 {target} が爆上げ！投資が2倍になったきつ！"
-        elif outcome == "loss":
-            result = int(cost * random.uniform(*info["loss_range"]))
-            info["price_per_share"] = max(1, info["price_per_share"] - 1)
-            msg = f"📉 {target} が下落…{cost - result} にゃんにゃんの損失きつ。"
-        else:
-            result = 0
-            info["price_per_share"] = max(1, info["price_per_share"] - 2)
-            msg = f"💥 {target} が大暴落！投資が全損したきつ…"
-
-        update_coin(user_id, result)
-        self.update_stats(user_id, cost, result - cost)
-        self.log_price(target)
+        self.invest_data.setdefault(user_id, {"total_invested": 0, "total_result": 0})
+        self.invest_data[user_id]["total_invested"] += cost
         self.save_all()
 
-        await interaction.followup.send(f"{msg}\n💰 残高: {get_coin(user_id)} にゃんにゃん")
+        await interaction.response.send_message(f"✅ {target} の株を {shares} 株（{cost} にゃんにゃん）購入したきつ！")
 
-    @app_commands.command(name="invest_stats", description="自分の投資成績を見るきつ")
-    async def invest_stats(self, interaction: discord.Interaction):
+    @app_commands.command(name="sell", description="株を売却してにゃんにゃんに戻すきつ！")
+    @app_commands.describe(target="企業名", shares="売る株数")
+    @app_commands.autocomplete(target=target_autocomplete)
+    async def sell(self, interaction: discord.Interaction, target: str, shares: int):
         user_id = str(interaction.user.id)
-        data = self.invest_data.get(user_id)
-        if not data:
-            return await interaction.response.send_message("まだ投資記録がないきつ", ephemeral=True)
+        if target not in self.market or shares <= 0:
+            return await interaction.response.send_message("❌ 売却内容が無効きつ", ephemeral=True)
 
-        embed = discord.Embed(title=f"📊 {interaction.user.display_name} の投資成績", color=discord.Color.gold())
-        embed.add_field(name="総投資額", value=f"{data['total_invested']} にゃんにゃん")
-        embed.add_field(name="総損益", value=f"{data['total_result']} にゃんにゃん")
-        embed.add_field(name="回数", value=f"{data['count']} 回")
-        embed.add_field(name="成功", value=f"{data['successes']} 回")
-        embed.add_field(name="失敗", value=f"{data['fails']} 回")
+        owned = self.portfolio.get(user_id, {}).get(target, 0)
+        if owned < shares:
+            return await interaction.response.send_message("❌ そんなに株を持っていないきつ", ephemeral=True)
+
+        price = self.market[target]["price_per_share"]
+        revenue = shares * price
+        update_coin(user_id, revenue)
+
+        self.portfolio[user_id][target] -= shares
+        if self.portfolio[user_id][target] == 0:
+            del self.portfolio[user_id][target]
+        if not self.portfolio[user_id]:
+            del self.portfolio[user_id]
+
+        self.invest_data.setdefault(user_id, {"total_invested": 0, "total_result": 0})
+        self.invest_data[user_id]["total_result"] += revenue
+        self.save_all()
+
+        await interaction.response.send_message(f"💰 {shares} 株 売却して {revenue} にゃんにゃん を手に入れたきつ！")
+
+    @app_commands.command(name="portfolio", description="自分の保有株を確認するきつ")
+    async def portfolio(self, interaction: discord.Interaction):
+        user_id = str(interaction.user.id)
+        holdings = self.portfolio.get(user_id)
+        if not holdings:
+            return await interaction.response.send_message("📭 株を保有していないきつ", ephemeral=True)
+
+        embed = discord.Embed(title="📦 あなたのポートフォリオ", color=discord.Color.blue())
+        total_value = 0
+        for company, amount in holdings.items():
+            price = self.market[company]["price_per_share"]
+            value = amount * price
+            total_value += value
+            embed.add_field(name=company, value=f"{amount} 株（{value} にゃんにゃん）", inline=False)
+
+        embed.set_footer(text=f"総評価額: {total_value} にゃんにゃん")
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="invest_ranking", description="投資成績ランキングを表示")
-    async def invest_ranking(self, interaction: discord.Interaction):
-        sorted_users = sorted(self.invest_data.items(), key=lambda x: x[1]["total_result"], reverse=True)[:10]
-        embed = discord.Embed(title="🏆 投資成績ランキング", color=discord.Color.green())
-
-        for i, (uid, stats) in enumerate(sorted_users, 1):
-            member = interaction.guild.get_member(int(uid))
-            name = member.display_name if member else f"ユーザー({uid})"
-            embed.add_field(name=f"{i}. {name}", value=f"損益: {stats['total_result']} にゃんにゃん\n投資額: {stats['total_invested']} にゃんにゃん", inline=False)
-
-        await interaction.response.send_message(embed=embed)
-
-    @app_commands.command(name="invest_chart", description="企業の株価履歴チャートを表示")
+    @app_commands.command(name="invest_chart", description="株価の履歴チャートを見るきつ")
     @app_commands.describe(target="企業名")
     @app_commands.autocomplete(target=target_autocomplete)
     async def invest_chart(self, interaction: discord.Interaction, target: str):
         if target not in self.history or not self.history[target]:
-            await interaction.response.send_message("📉 株価履歴がないきつ！", ephemeral=True)
-            return
+            return await interaction.response.send_message("📉 データがないきつ", ephemeral=True)
 
         data = self.history[target]
         times = [datetime.datetime.strptime(p["time"], "%Y-%m-%d %H:%M") for p in data]
@@ -169,6 +202,19 @@ class Invest(commands.Cog):
 
         await interaction.response.send_message(file=discord.File(path))
         os.remove(path)
+    @app_commands.command(name="market", description="現在の株価を一覧で見るきつ！")
+    async def market(self, interaction: discord.Interaction):
+        embed = discord.Embed(title="📈 現在の株価一覧", color=discord.Color.green())
+        for name, info in self.market.items():
+            price = info.get("price_per_share", "?")
+            volatility = info.get("volatility", 0)
+            embed.add_field(
+                name=name,
+                value=f"{price} にゃんにゃん/株\n📊 変動率 ±{int(volatility * 100)}%",
+                inline=False
+            )
+        embed.set_footer(text="価格は1分ごとに変動するきつ！")
+        await interaction.response.send_message(embed=embed)
 
 # セットアップ関数
 async def setup(bot):

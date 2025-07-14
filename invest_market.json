@@ -1,0 +1,42 @@
+{
+  "\u306e\u3070\u9244\u9053": {
+    "price_per_share": 97,
+    "volatility": 0.2
+  },
+  "\u304f\u308b\u3042\u30d1\u30c6\u30a3\u30b9\u30ea\u30fc": {
+    "price_per_share": 52,
+    "volatility": 0.3
+  },
+  "\u304d\u3064\u306d\u88fd\u9eba": {
+    "price_per_share": 8,
+    "volatility": 0.1
+  },
+  "\u306a\u3048\u304f\u3093\u6c34\u65cf\u9928": {
+    "price_per_share": 22,
+    "volatility": 0.4
+  },
+  "\u3057\u3057\u52d5\u7269\u5712": {
+    "price_per_share": 31,
+    "volatility": 0.2
+  },
+  "\u306f\u3080\u3063\u3061\u30da\u30c3\u30c8\u30b7\u30e7\u30c3\u30d7": {
+    "price_per_share": 57,
+    "volatility": 0.1
+  },
+  "\u304f\u308d\u306d\u3053\u753b\u5eca": {
+    "price_per_share": 97,
+    "volatility": 0.3
+  },
+  "\u3084\u307e\u3068\u3093\u5bff\u53f8": {
+    "price_per_share": 45,
+    "volatility": 0.3
+  },
+  "\u3042\u3086\u304b\u306f\u7cbe\u8089\u5e97": {
+    "price_per_share": 82,
+    "volatility": 0.4
+  },
+  "\u3074\u30fc\u8cb4\u65cf": {
+    "price_per_share": 50,
+    "volatility": 0.2
+  }
+}
