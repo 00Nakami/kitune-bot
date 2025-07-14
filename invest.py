@@ -4,10 +4,39 @@ from discord.ext import commands
 import random
 import json
 import os
+import asyncio
 
 from data import get_coin, update_coin
 
 INVEST_FILE = "invest_stats.json"
+
+# 投資先データ定義
+INVEST_OPTIONS = {
+    "にゃんこ証券": {
+        "price_per_share": 12,
+        "wait_seconds": 5,
+        "gain_range": (1.1, 1.4),
+        "loss_range": (0.6, 0.9)
+    },
+    "もちもち銀行": {
+        "price_per_share": 18,
+        "wait_seconds": 7,
+        "gain_range": (1.2, 1.6),
+        "loss_range": (0.4, 0.8)
+    },
+    "たこやき産業": {
+        "price_per_share": 8,
+        "wait_seconds": 4,
+        "gain_range": (1.05, 1.2),
+        "loss_range": (0.7, 0.95)
+    },
+    "ペンギン重工": {
+        "price_per_share": 20,
+        "wait_seconds": 6,
+        "gain_range": (1.3, 1.8),
+        "loss_range": (0.3, 0.7)
+    }
+}
 
 def load_invest_data():
     if not os.path.exists(INVEST_FILE):
@@ -44,19 +73,38 @@ class Invest(commands.Cog):
         save_invest_data(self.invest_data)
 
     @app_commands.command(name="invest", description="にゃんにゃんを投資してみよう！")
-    @app_commands.describe(amount="投資額（にゃんにゃん）")
-    async def invest(self, interaction: discord.Interaction, amount: int):
+    @app_commands.describe(
+        target="投資先（省略でランダム）",
+        shares="株数（100株単位）"
+    )
+    async def invest(self, interaction: discord.Interaction, shares: int, target: str = None):
         user = interaction.user
         user_id = str(user.id)
         current = get_coin(user_id)
 
-        if amount <= 0:
-            await interaction.response.send_message("❌ 投資額は1以上にするきつ！", ephemeral=True)
+        if shares <= 0 or shares % 100 != 0:
+            await interaction.response.send_message("❌ 株数は100株単位で指定するきつ！", ephemeral=True)
             return
 
-        if current < amount:
+        if target:
+            if target not in INVEST_OPTIONS:
+                await interaction.response.send_message("❌ 投資先が無効きつ！", ephemeral=True)
+                return
+        else:
+            target = random.choice(list(INVEST_OPTIONS.keys()))
+
+        option = INVEST_OPTIONS[target]
+        total_cost = shares * option["price_per_share"]
+
+        if current < total_cost:
             await interaction.response.send_message("❌ にゃんにゃんが足りないきつ！", ephemeral=True)
             return
+
+        update_coin(user_id, -total_cost)
+        await interaction.response.send_message(
+            f"📤 {target} に {shares} 株（{total_cost} にゃんにゃん）を投資したきつ…結果を待つきつ…（{option['wait_seconds']}秒）")
+
+        await asyncio.sleep(option["wait_seconds"])
 
         outcome = random.choices(
             population=["gain", "loss", "double", "fail"],
@@ -65,22 +113,24 @@ class Invest(commands.Cog):
         )[0]
 
         if outcome == "gain":
-            result = int(amount * random.uniform(1.1, 1.5))
-            message = f"📈 投資成功！{result - amount}にゃんにゃんの利益きつ！"
+            multiplier = random.uniform(*option["gain_range"])
+            result = int(total_cost * multiplier)
+            message = f"📈 {target} が上昇！{result - total_cost} にゃんにゃんの利益きつ！"
         elif outcome == "double":
-            result = amount * 2
-            message = f"💹 大成功！投資が2倍になったきつ！"
+            result = total_cost * 2
+            message = f"💹 {target} が爆上げ！投資が2倍になったきつ！"
         elif outcome == "loss":
-            result = int(amount * random.uniform(0.3, 0.9))
-            message = f"📉 損失発生…{amount - result}にゃんにゃんの損失きつ。"
+            multiplier = random.uniform(*option["loss_range"])
+            result = int(total_cost * multiplier)
+            message = f"📉 {target} が下落…{total_cost - result} にゃんにゃんの損失きつ。"
         else:
             result = 0
-            message = f"💥 大失敗！投資が全損したきつ…"
+            message = f"💥 {target} が大暴落！投資が全損したきつ…"
 
-        update_coin(user_id, result - amount)
-        self.update_stats(user_id, amount, result - amount)
+        update_coin(user_id, result)
+        self.update_stats(user_id, total_cost, result - total_cost)
 
-        await interaction.response.send_message(f"{message}\n💰 残高: {get_coin(user_id)}にゃんにゃん")
+        await interaction.followup.send(f"{message}\n💰 残高: {get_coin(user_id)} にゃんにゃん")
 
     @app_commands.command(name="invest_stats", description="自分の投資成績を見るきつ")
     async def invest_stats(self, interaction: discord.Interaction):
