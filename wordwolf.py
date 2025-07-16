@@ -72,7 +72,7 @@ class WordWolf(commands.Cog):
         self.bot = bot
         self.sessions = {}
 
-    @app_commands.command(name="wordwolf", description="ワードウルフを始めるきつ（UI参加）")
+    @app_commands.command(name="wordwolf", description="ワードウルフを始めるきつ")
     async def wordwolf(self, interaction: discord.Interaction):
         channel = interaction.channel
 
