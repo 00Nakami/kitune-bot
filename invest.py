@@ -21,16 +21,21 @@ HISTORY_FILE = "market_history.json"
 PORTFOLIO_FILE = "invest_portfolio.json"
 
 DEFAULT_MARKET = {
-    "のば鉄道": {"price_per_share": 1000, "up_rate": 0.1, "down_rate": 0.05, "min_price": 500},
-    "くるあパティスリー": {"price_per_share": 200, "up_rate": 0.2, "down_rate": 0.15, "min_price": 100},
-    "きつね製麺": {"price_per_share": 20, "up_rate": 0.2, "down_rate": 0.1, "min_price": 10},
-    "なえくん水族館": {"price_per_share": 40, "up_rate": 0.5, "down_rate": 0.25, "min_price": 20},
-    "しし動物園": {"price_per_share": 60, "up_rate": 0.4, "down_rate": 0.2, "min_price": 30},
-    "はむっちペットショップ": {"price_per_share": 80, "up_rate": 0.3, "down_rate": 0.2, "min_price": 40},
-    "くろねこ画廊": {"price_per_share": 600, "up_rate": 0.4, "down_rate": 0.2, "min_price": 300},
-    "やまとん銃工": {"price_per_share": 800, "up_rate": 0.3, "down_rate": 0.15, "min_price": 400},
-    "あゆかは精肉店": {"price_per_share": 100, "up_rate": 0.1, "down_rate": 0.05, "min_price": 50},
-    "ぴー貴族": {"price_per_share": 400, "up_rate": 0.5, "down_rate": 0.25, "min_price": 200},
+    "のば鉄道": {"price_per_share": 1000, "up_rate": 0.1, "down_rate": 0.05, "min_price": 250},
+    "くるあパティスリー": {"price_per_share": 200, "up_rate": 0.2, "down_rate": 0.1, "min_price": 50},
+    "きつね製麺": {"price_per_share": 20, "up_rate": 0.2, "down_rate": 0.1, "min_price": 5},
+    "なえくん水族館": {"price_per_share": 20, "up_rate": 0.5, "down_rate": 0.25, "min_price": 5},
+    "しし動物園": {"price_per_share": 40, "up_rate": 0.4, "down_rate": 0.2, "min_price": 10},
+    "はむっちペットショップ": {"price_per_share": 60, "up_rate": 0.3, "down_rate": 0.15, "min_price": 15},
+    "くろねこ画廊": {"price_per_share": 600, "up_rate": 0.4, "down_rate": 0.2, "min_price": 150},
+    "やまとん銃工": {"price_per_share": 800, "up_rate": 0.3, "down_rate": 0.15, "min_price": 200},
+    "あゆかは精肉店": {"price_per_share": 80, "up_rate": 0.1, "down_rate": 0.05, "min_price": 20},
+    "ぴー貴族": {"price_per_share": 400, "up_rate": 0.5, "down_rate": 0.25, "min_price": 100},
+    "じゅんちゃん喫茶": {"price_per_share": 700, "up_rate": 0.3, "down_rate": 0.15, "min_price": 175},
+    "ふみ家具店": {"price_per_share": 300, "up_rate": 0.4, "down_rate": 0.2, "min_price": 75},
+    "あいす・雪だるま店": {"price_per_share": 900, "up_rate": 0.1, "down_rate": 0.05, "min_price": 225},
+    "猫カフェねこねこ": {"price_per_share": 500, "up_rate": 0.5, "down_rate": 0.25, "min_price": 125},
+    "なかみぃ神社": {"price_per_share": 100, "up_rate": 0.2, "down_rate": 0.1, "min_price": 25},
 }
 
 def load_json(file, default={}):
@@ -89,8 +94,8 @@ class Invest(commands.Cog):
             else:
                 factor = random.uniform(1 - down_rate, 1)
 
-            new_price = int(info["price_per_share"] * factor)
-            info["price_per_share"] = max(int(min_price), new_price)
+            new_price = max(min_price, int(info["price_per_share"] * factor))
+            info["price_per_share"] = new_price
         self.log_price()
         self.save_all()
 
@@ -132,9 +137,11 @@ class Invest(commands.Cog):
         update_coin(user_id, -cost)
         self.portfolio.setdefault(user_id, {}).setdefault(target, 0)
         self.portfolio[user_id][target] += shares
+
         self.invest_data.setdefault(user_id, {"total_invested": 0, "total_result": 0})
         self.invest_data[user_id]["total_invested"] += cost
         self.save_all()
+
         await interaction.response.send_message(f"✅ {target} の株を {shares} 株（{cost} にゃんにゃん）購入したきつ！")
 
     @app_commands.command(name="invest_sell", description="株を売却してにゃんにゃんに戻すきつ！")
@@ -144,6 +151,7 @@ class Invest(commands.Cog):
         user_id = str(interaction.user.id)
         if target not in self.market or shares <= 0:
             return await interaction.response.send_message("❌ 売却内容が無効きつ", ephemeral=True)
+
         owned = self.portfolio.get(user_id, {}).get(target, 0)
         if owned < shares:
             return await interaction.response.send_message("❌ そんなに株を持っていないきつ", ephemeral=True)
@@ -151,14 +159,17 @@ class Invest(commands.Cog):
         price = self.market[target]["price_per_share"]
         revenue = shares * price
         update_coin(user_id, revenue)
+
         self.portfolio[user_id][target] -= shares
         if self.portfolio[user_id][target] == 0:
             del self.portfolio[user_id][target]
         if not self.portfolio[user_id]:
             del self.portfolio[user_id]
+
         self.invest_data.setdefault(user_id, {"total_invested": 0, "total_result": 0})
         self.invest_data[user_id]["total_result"] += revenue
         self.save_all()
+
         await interaction.response.send_message(f"💰 {shares} 株 売却して {revenue} にゃんにゃん を手に入れたきつ！")
 
     @app_commands.command(name="invest_portfolio", description="自分の保有株を確認するきつ")
@@ -184,6 +195,7 @@ class Invest(commands.Cog):
     async def invest_chart(self, interaction: discord.Interaction, target: str):
         if target not in self.history or not self.history[target]:
             return await interaction.response.send_message("📉 データがないきつ", ephemeral=True)
+
         data = self.history[target]
         times = [datetime.datetime.strptime(p["time"], "%Y-%m-%d %H:%M") for p in data]
         prices = [p["price"] for p in data]
@@ -196,9 +208,11 @@ class Invest(commands.Cog):
         plt.xticks(rotation=45, fontproperties=font_prop)
         plt.yticks(fontproperties=font_prop)
         plt.tight_layout()
+
         path = f"chart_{target}.png"
         plt.savefig(path)
         plt.close()
+
         await interaction.response.send_message(file=discord.File(path))
         os.remove(path)
 
@@ -207,9 +221,11 @@ class Invest(commands.Cog):
         embed = discord.Embed(title="📈 現在の株価一覧", color=discord.Color.green())
         for name, info in self.market.items():
             price = info.get("price_per_share", "?")
+            up = info.get("up_rate", 0)
+            down = info.get("down_rate", 0)
             embed.add_field(
                 name=name,
-                value=f"{price} にゃんにゃん/株",
+                value=f"{price} にゃんにゃん/株\n📈上昇: +{int(up*100)}% 📉下降: -{int(down*100)}%",
                 inline=False
             )
         embed.set_footer(text="価格は1分ごとに変動するきつ！")
