@@ -21,16 +21,16 @@ HISTORY_FILE = "market_history.json"
 PORTFOLIO_FILE = "invest_portfolio.json"
 
 DEFAULT_MARKET = {
-    "のば鉄道": {"price_per_share": 100, "volatility": 0.2},
-    "くるあパティスリー": {"price_per_share": 50, "volatility": 0.3},
+    "のば鉄道": {"price_per_share": 1000, "volatility": 0.2},
+    "くるあパティスリー": {"price_per_share": 200, "volatility": 0.4},
     "きつね製麺": {"price_per_share": 10, "volatility": 0.1},
-    "なえくん水族館": {"price_per_share": 30, "volatility": 0.4},
-    "しし動物園": {"price_per_share": 40, "volatility": 0.2},
-    "はむっちペットショップ": {"price_per_share": 60, "volatility": 0.1},
-    "くろねこ画廊": {"price_per_share": 80, "volatility": 0.3},
-    "やまとん寿司": {"price_per_share": 60, "volatility": 0.3},
+    "なえくん水族館": {"price_per_share": 30, "volatility": 0.5},
+    "しし動物園": {"price_per_share": 50, "volatility": 0.2},
+    "はむっちペットショップ": {"price_per_share": 70, "volatility": 0.3},
+    "くろねこ画廊": {"price_per_share": 600, "volatility": 0.1},
+    "やまとん寿司": {"price_per_share": 800, "volatility": 0.3},
     "あゆかは精肉店": {"price_per_share": 90, "volatility": 0.4},
-    "ぴー貴族": {"price_per_share": 70, "volatility": 0.2},
+    "ぴー貴族": {"price_per_share": 400, "volatility": 0.5},
 }
 
 def load_json(file, default={}):
@@ -106,7 +106,7 @@ class Invest(commands.Cog):
           print(f"[Autocomplete Error]: {e}")
           return []
 
-    @app_commands.command(name="invest", description="にゃんにゃんで株を購入するきつ！")
+    @app_commands.command(name="invest_buy", description="にゃんにゃんで株を購入するきつ！")
     @app_commands.describe(target="企業名", shares="株数（100株単位）")
     @app_commands.autocomplete(target=target_autocomplete)
     async def invest(self, interaction: discord.Interaction, target: str, shares: int):
@@ -134,7 +134,7 @@ class Invest(commands.Cog):
 
         await interaction.response.send_message(f"✅ {target} の株を {shares} 株（{cost} にゃんにゃん）購入したきつ！")
 
-    @app_commands.command(name="sell", description="株を売却してにゃんにゃんに戻すきつ！")
+    @app_commands.command(name="invest_sell", description="株を売却してにゃんにゃんに戻すきつ！")
     @app_commands.describe(target="企業名", shares="売る株数")
     @app_commands.autocomplete(target=target_autocomplete)
     async def sell(self, interaction: discord.Interaction, target: str, shares: int):
@@ -162,7 +162,7 @@ class Invest(commands.Cog):
 
         await interaction.response.send_message(f"💰 {shares} 株 売却して {revenue} にゃんにゃん を手に入れたきつ！")
 
-    @app_commands.command(name="portfolio", description="自分の保有株を確認するきつ")
+    @app_commands.command(name="invest_portfolio", description="自分の保有株を確認するきつ")
     async def portfolio(self, interaction: discord.Interaction):
         user_id = str(interaction.user.id)
         holdings = self.portfolio.get(user_id)
@@ -207,7 +207,7 @@ class Invest(commands.Cog):
       await interaction.response.send_message(file=discord.File(path))
       os.remove(path)
 
-    @app_commands.command(name="market", description="現在の株価を一覧で見るきつ！")
+    @app_commands.command(name="invest_market", description="現在の株価を一覧で見るきつ！")
     async def market(self, interaction: discord.Interaction):
         embed = discord.Embed(title="📈 現在の株価一覧", color=discord.Color.green())
         for name, info in self.market.items():
