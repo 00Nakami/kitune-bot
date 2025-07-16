@@ -21,15 +21,15 @@ HISTORY_FILE = "market_history.json"
 PORTFOLIO_FILE = "invest_portfolio.json"
 
 DEFAULT_MARKET = {
-    "のば鉄道": {"price_per_share": 1000, "volatility": 0.2},
-    "くるあパティスリー": {"price_per_share": 200, "volatility": 0.4},
-    "きつね製麺": {"price_per_share": 10, "volatility": 0.1},
-    "なえくん水族館": {"price_per_share": 30, "volatility": 0.5},
-    "しし動物園": {"price_per_share": 50, "volatility": 0.2},
-    "はむっちペットショップ": {"price_per_share": 70, "volatility": 0.3},
-    "くろねこ画廊": {"price_per_share": 600, "volatility": 0.1},
-    "やまとん寿司": {"price_per_share": 800, "volatility": 0.3},
-    "あゆかは精肉店": {"price_per_share": 90, "volatility": 0.4},
+    "のば鉄道": {"price_per_share": 1000, "volatility": 0.1},
+    "くるあパティスリー": {"price_per_share": 200, "volatility": 0.2},
+    "きつね製麺": {"price_per_share": 20, "volatility": 0.2},
+    "なえくん水族館": {"price_per_share": 40, "volatility": 0.5},
+    "しし動物園": {"price_per_share": 60, "volatility": 0.4},
+    "はむっちペットショップ": {"price_per_share": 80, "volatility": 0.3},
+    "くろねこ画廊": {"price_per_share": 600, "volatility": 0.4},
+    "やまとん銃工": {"price_per_share": 800, "volatility": 0.3},
+    "あゆかは精肉店": {"price_per_share": 100, "volatility": 0.1},
     "ぴー貴族": {"price_per_share": 400, "volatility": 0.5},
 }
 
