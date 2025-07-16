@@ -23,8 +23,8 @@ PORTFOLIO_FILE = "invest_portfolio.json"
 DEFAULT_MARKET = {
     "のば鉄道": {"price_per_share": 1000, "up_rate": 0.1, "down_rate": 0.05, "min_price": 250},
     "くるあパティスリー": {"price_per_share": 200, "up_rate": 0.2, "down_rate": 0.15, "min_price": 50},
-    "きつね製麺": {"price_per_share": 20, "up_rate": 0.2, "down_rate": 0.15, "min_price": 5},
-    "なえくん水族館": {"price_per_share": 20, "up_rate": 0.5, "down_rate": 0.35, "min_price": 5},
+    "きつね製麺": {"price_per_share": 20, "up_rate": 0.2, "down_rate": 0.15, "min_price": 10},
+    "なえくん水族館": {"price_per_share": 20, "up_rate": 0.5, "down_rate": 0.35, "min_price": 10},
     "しし動物園": {"price_per_share": 40, "up_rate": 0.4, "down_rate": 0.3, "min_price": 10},
     "はむっちペットショップ": {"price_per_share": 60, "up_rate": 0.3, "down_rate": 0.25, "min_price": 15},
     "くろねこ画廊": {"price_per_share": 600, "up_rate": 0.4, "down_rate": 0.3, "min_price": 150},
@@ -168,7 +168,7 @@ class Invest(commands.Cog):
         self.invest_data[user_id]["total_result"] += revenue
         self.save_all()
 
-        await interaction.response.send_message(f"💰 {shares} 株 売却して {revenue} にゃんにゃん を手に入れたきつ！")
+        await interaction.response.send_message(f"💰 {target} の株を {shares} 株 売却して {revenue} にゃんにゃん を手に入れたきつ！")
 
     @app_commands.command(name="invest_portfolio", description="自分の保有株を確認するきつ")
     async def portfolio(self, interaction: discord.Interaction):
