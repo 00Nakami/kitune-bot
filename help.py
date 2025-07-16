@@ -20,10 +20,23 @@ class Help(commands.Cog):
                 "`/bj` - ブラックジャックで対戦するきつ\n"
                 "`/slot` - スロットで遊べるきつ\n"
                 "`/roulette` - ルーレットで遊べるきつ\n"
-                "`/janken` - じゃんけんで勝負するきつ！\n"
+                "`/janken` - じゃんけんで勝負するきつ\n"
                 "`/kitumikuji` - 1時間に1回きつみくじを引くきつ\n"
                 "`/tictactoe` - ○×ゲームで対戦するきつ\n"
                 "`/wordwolf` - みんなでワードウルフで遊ぶきつ"
+            ),
+            inline=False
+        )
+
+        # 🎮 投資カテゴリ
+        embed.add_field(
+            name="📈 投資",
+            value=(
+                "`/invest_buy` - 欲しい銘柄の株を買うきつ\n"
+                "`/invest_sell` - 所有している株を売るきつ\n"
+                "`/invest_portfolio` - 現在所有している株を表示するきつ\n"
+                "`/invest_chart` - 株価の履歴チャートを見るきつ\n"
+                "`/invest_market` - 現在の株価を一覧で見るきつ"
             ),
             inline=False
         )
