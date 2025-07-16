@@ -22,20 +22,20 @@ PORTFOLIO_FILE = "invest_portfolio.json"
 
 DEFAULT_MARKET = {
     "のば鉄道": {"price_per_share": 1000, "up_rate": 0.1, "down_rate": 0.05, "min_price": 250},
-    "くるあパティスリー": {"price_per_share": 200, "up_rate": 0.2, "down_rate": 0.1, "min_price": 50},
-    "きつね製麺": {"price_per_share": 20, "up_rate": 0.2, "down_rate": 0.1, "min_price": 5},
-    "なえくん水族館": {"price_per_share": 20, "up_rate": 0.5, "down_rate": 0.3, "min_price": 5},
-    "しし動物園": {"price_per_share": 40, "up_rate": 0.4, "down_rate": 0.25, "min_price": 10},
-    "はむっちペットショップ": {"price_per_share": 60, "up_rate": 0.3, "down_rate": 0.2, "min_price": 15},
-    "くろねこ画廊": {"price_per_share": 600, "up_rate": 0.4, "down_rate": 0.25, "min_price": 150},
-    "やまとん銃工": {"price_per_share": 800, "up_rate": 0.3, "down_rate": 0.2, "min_price": 200},
+    "くるあパティスリー": {"price_per_share": 200, "up_rate": 0.2, "down_rate": 0.15, "min_price": 50},
+    "きつね製麺": {"price_per_share": 20, "up_rate": 0.2, "down_rate": 0.15, "min_price": 5},
+    "なえくん水族館": {"price_per_share": 20, "up_rate": 0.5, "down_rate": 0.35, "min_price": 5},
+    "しし動物園": {"price_per_share": 40, "up_rate": 0.4, "down_rate": 0.3, "min_price": 10},
+    "はむっちペットショップ": {"price_per_share": 60, "up_rate": 0.3, "down_rate": 0.25, "min_price": 15},
+    "くろねこ画廊": {"price_per_share": 600, "up_rate": 0.4, "down_rate": 0.3, "min_price": 150},
+    "やまとん銃工": {"price_per_share": 800, "up_rate": 0.3, "down_rate": 0.25, "min_price": 200},
     "あゆかは精肉店": {"price_per_share": 80, "up_rate": 0.1, "down_rate": 0.05, "min_price": 20},
-    "ぴー貴族": {"price_per_share": 400, "up_rate": 0.5, "down_rate": 0.3, "min_price": 100},
-    "じゅんちゃん喫茶": {"price_per_share": 700, "up_rate": 0.3, "down_rate": 0.2, "min_price": 175},
-    "ふみ家具店": {"price_per_share": 300, "up_rate": 0.4, "down_rate": 0.25, "min_price": 75},
+    "ぴー貴族": {"price_per_share": 400, "up_rate": 0.5, "down_rate": 0.35, "min_price": 100},
+    "じゅんちゃん喫茶": {"price_per_share": 700, "up_rate": 0.3, "down_rate": 0.25, "min_price": 175},
+    "ふみ家具店": {"price_per_share": 300, "up_rate": 0.4, "down_rate": 0.3, "min_price": 75},
     "あいす・雪だるま店": {"price_per_share": 900, "up_rate": 0.1, "down_rate": 0.05, "min_price": 225},
-    "猫カフェねこねこ": {"price_per_share": 500, "up_rate": 0.5, "down_rate": 0.3, "min_price": 125},
-    "なかみぃ神社": {"price_per_share": 100, "up_rate": 0.2, "down_rate": 0.1, "min_price": 25},
+    "猫カフェねこねこ": {"price_per_share": 500, "up_rate": 0.5, "down_rate": 0.35, "min_price": 125},
+    "なかみぃ神社": {"price_per_share": 100, "up_rate": 0.2, "down_rate": 0.15, "min_price": 25},
 }
 
 def load_json(file, default={}):
