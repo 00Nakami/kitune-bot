@@ -77,7 +77,7 @@ class Invest(commands.Cog):
         save_json(PORTFOLIO_FILE, self.portfolio)
 
     def log_price(self):
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%d %H:%M")
         for name, info in self.market.items():
             self.history.setdefault(name, []).append({"time": now, "price": info["price_per_share"]})
             self.history[name] = self.history[name][-1440:]
@@ -89,11 +89,7 @@ class Invest(commands.Cog):
             down_rate = info.get("down_rate", 0.1)
             min_price = info.get("min_price", 1)
             direction = random.choice(["up", "down"])
-            if direction == "up":
-                factor = random.uniform(1, 1 + up_rate)
-            else:
-                factor = random.uniform(1 - down_rate, 1)
-
+            factor = random.uniform(1, 1 + up_rate) if direction == "up" else random.uniform(1 - down_rate, 1)
             new_price = max(min_price, int(info["price_per_share"] * factor))
             info["price_per_share"] = new_price
         self.log_price()
@@ -145,12 +141,14 @@ class Invest(commands.Cog):
         await interaction.response.send_message(f"✅ {target} の株を {shares} 株（{cost} にゃんにゃん）購入したきつ！")
 
     @app_commands.command(name="invest_sell", description="株を売却してにゃんにゃんに戻すきつ！")
-    @app_commands.describe(target="企業名", shares="売る株数")
+    @app_commands.describe(target="企業名", shares="売る株数（100株単位）")
     @app_commands.autocomplete(target=target_autocomplete)
     async def sell(self, interaction: discord.Interaction, target: str, shares: int):
         user_id = str(interaction.user.id)
-        if target not in self.market or shares <= 0:
-            return await interaction.response.send_message("❌ 売却内容が無効きつ", ephemeral=True)
+        if shares <= 0 or shares % 100 != 0:
+            return await interaction.response.send_message("❌ 売る株数は100株単位できつ！", ephemeral=True)
+        if target not in self.market:
+            return await interaction.response.send_message("❌ 無効な企業名きつ", ephemeral=True)
 
         owned = self.portfolio.get(user_id, {}).get(target, 0)
         if owned < shares:
@@ -203,7 +201,7 @@ class Invest(commands.Cog):
         plt.figure(figsize=(6, 4))
         plt.plot(times, prices, marker="o", linestyle="-")
         plt.title(f"{target} の株価履歴", fontproperties=font_prop)
-        plt.xlabel("時間", fontproperties=font_prop)
+        plt.xlabel("時間（JST）", fontproperties=font_prop)
         plt.ylabel("株価", fontproperties=font_prop)
         plt.xticks(rotation=45, fontproperties=font_prop)
         plt.yticks(fontproperties=font_prop)
