@@ -28,7 +28,7 @@ def setup_slot(bot):
             return
 
         view = SlotView(user, bet)
-        await interaction.response.send_message("🎰 スロットスタート！ にゃんにゃん: {}枚".format(bet), view=view)
+        await interaction.response.send_message(f"🎰 スロットスタート！ にゃんにゃん: {bet}枚", view=view)
         view.message = await interaction.original_response()
         await view.start_spinning()
 
@@ -41,12 +41,13 @@ class SlotView(discord.ui.View):
         self.stopped = [False, False, False]
         self.running_tasks = [None, None, None]
         self.message = None
-        self.last_update_time = 0
 
     def get_display(self):
         lines = []
         for row in range(3):
-            line = [self.reels[col][row] for col in range(3)]
+            line = []
+            for col in range(3):
+                line.append(self.reels[col][row])
             lines.append("    ".join(line))
         return "🎰 スロット回転中...\n\n" + "\n".join(lines)
 
@@ -58,16 +59,12 @@ class SlotView(discord.ui.View):
         try:
             while not self.stopped[index]:
                 self.reels[index].pop()
-                self.reels[index].insert(0, random.choice(SYMBOLS))
+                new_emoji = random.choice(SYMBOLS)
+                self.reels[index].insert(0, new_emoji)
 
-                # 1秒ごとにだけ表示更新
-                now = asyncio.get_event_loop().time()
-                if now - self.last_update_time > 1.0:
-                    self.last_update_time = now
-                    if self.message:
-                        await self.message.edit(content=self.get_display(), view=self)
-
-                await asyncio.sleep(0.1)  # 少し間隔を広げて負荷軽減
+                if self.message:
+                    await self.message.edit(content=self.get_display(), view=self)
+                await asyncio.sleep(0.2)
         except asyncio.CancelledError:
             return
 
@@ -81,13 +78,14 @@ class SlotView(discord.ui.View):
             return
 
         self.stopped[index] = True
+
         if self.running_tasks[index]:
             self.running_tasks[index].cancel()
 
+        await self.message.edit(content=self.get_display(), view=self)
+
         if not interaction.response.is_done():
             await interaction.response.defer()
-
-        await self.message.edit(content=self.get_display(), view=self)
 
         if all(self.stopped):
             await self.finish_game()
@@ -106,7 +104,10 @@ class SlotView(discord.ui.View):
         for child in self.children:
             child.disabled = True
 
-        lines = [[self.reels[i][row] for i in range(3)] for row in range(3)]
+        lines = []
+        for row in range(3):
+            line = [self.reels[i][row] for i in range(3)]
+            lines.append(line)
 
         win = 0
         hit_line = None
