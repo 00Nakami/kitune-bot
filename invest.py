@@ -21,21 +21,21 @@ HISTORY_FILE = "market_history.json"
 PORTFOLIO_FILE = "invest_portfolio.json"
 
 DEFAULT_MARKET = {
-    "のば鉄道": {"price_per_share": 1000, "up_rate": 0.1, "down_rate": 0.05, "min_price": 250},
-    "くるあパティスリー": {"price_per_share": 200, "up_rate": 0.2, "down_rate": 0.15, "min_price": 50},
-    "きつね製麺": {"price_per_share": 20, "up_rate": 0.2, "down_rate": 0.15, "min_price": 10},
-    "なえくん水族館": {"price_per_share": 20, "up_rate": 0.5, "down_rate": 0.35, "min_price": 10},
-    "しし動物園": {"price_per_share": 40, "up_rate": 0.4, "down_rate": 0.3, "min_price": 10},
-    "はむっちペットショップ": {"price_per_share": 60, "up_rate": 0.3, "down_rate": 0.25, "min_price": 15},
-    "くろねこ画廊": {"price_per_share": 600, "up_rate": 0.4, "down_rate": 0.3, "min_price": 150},
-    "やまとん銃工": {"price_per_share": 800, "up_rate": 0.3, "down_rate": 0.25, "min_price": 200},
-    "あゆかは精肉店": {"price_per_share": 80, "up_rate": 0.1, "down_rate": 0.05, "min_price": 20},
-    "ぴー貴族": {"price_per_share": 400, "up_rate": 0.5, "down_rate": 0.35, "min_price": 100},
-    "じゅんちゃん喫茶": {"price_per_share": 700, "up_rate": 0.3, "down_rate": 0.25, "min_price": 175},
-    "ふみ家具店": {"price_per_share": 300, "up_rate": 0.4, "down_rate": 0.3, "min_price": 75},
-    "あいす・雪だるま店": {"price_per_share": 900, "up_rate": 0.1, "down_rate": 0.05, "min_price": 225},
-    "猫カフェねこねこ": {"price_per_share": 500, "up_rate": 0.5, "down_rate": 0.35, "min_price": 125},
-    "なかみぃ神社": {"price_per_share": 100, "up_rate": 0.2, "down_rate": 0.15, "min_price": 25},
+    "のば鉄道": {"price_per_share": 10000, "up_rate": 0.01, "down_rate": 0.01, "min_price": 10000},
+    "くるあパティスリー": {"price_per_share": 2000, "up_rate": 0.09, "down_rate": 0.09, "min_price": 2000},
+    "きつね製麺": {"price_per_share": 200, "up_rate": 0.05, "down_rate": 0.05, "min_price": 200},
+    "なえくん水族館": {"price_per_share": 400, "up_rate": 0.06, "down_rate": 0.06, "min_price": 400},
+    "しし動物園": {"price_per_share": 600, "up_rate": 0.4, "down_rate": 0.4, "min_price": 600},
+    "はむっちペットショップ": {"price_per_share": 800, "up_rate": 0.07, "down_rate": 0.07, "min_price": 800},
+    "くろねこ画廊": {"price_per_share": 6000, "up_rate": 0.04, "down_rate": 0.04, "min_price": 6000},
+    "やまとん銃工": {"price_per_share": 8000, "up_rate": 0.08, "down_rate": 0.08, "min_price": 8000},
+    "あゆかは精肉店": {"price_per_share": 1000, "up_rate": 0.5, "down_rate": 0.5, "min_price": 1000},
+    "ぴー貴族": {"price_per_share": 4000, "up_rate": 0.3, "down_rate": 0.3, "min_price": 4000},
+    "じゅんちゃん喫茶": {"price_per_share": 7000, "up_rate": 0.03, "down_rate": 0.03, "min_price": 7000},
+    "ふみ家具店": {"price_per_share": 3000, "up_rate": 0.1, "down_rate": 0.1, "min_price": 3000},
+    "あいす・雪だるま店": {"price_per_share": 9000, "up_rate": 0.02, "down_rate": 0.02, "min_price": 9000},
+    "猫カフェねこねこ": {"price_per_share": 5000, "up_rate": 0.2, "down_rate": 0.2, "min_price": 5000},
+    "なかみぃ神社": {"price_per_share": 10000, "up_rate": 0.0001, "down_rate": 0, "min_price": 10000},
 }
 
 def load_json(file, default={}):
@@ -114,12 +114,12 @@ class Invest(commands.Cog):
             return []
 
     @app_commands.command(name="invest_buy", description="にゃんにゃんで株を購入するきつ！")
-    @app_commands.describe(target="企業名", shares="株数（100株単位）")
+    @app_commands.describe(target="企業名", shares="株数（10株単位）")
     @app_commands.autocomplete(target=target_autocomplete)
     async def invest(self, interaction: discord.Interaction, target: str, shares: int):
         user_id = str(interaction.user.id)
-        if shares <= 0 or shares % 100 != 0:
-            return await interaction.response.send_message("❌ 株数は100株単位できつ！", ephemeral=True)
+        if shares <= 0 or shares % 10 != 0:
+            return await interaction.response.send_message("❌ 株数は10株単位できつ！", ephemeral=True)
         if target not in self.market:
             return await interaction.response.send_message("❌ 無効な企業名きつ", ephemeral=True)
 
@@ -141,12 +141,12 @@ class Invest(commands.Cog):
         await interaction.response.send_message(f"✅ {target} の株を {shares} 株（{cost} にゃんにゃん）購入したきつ！")
 
     @app_commands.command(name="invest_sell", description="株を売却してにゃんにゃんに戻すきつ！")
-    @app_commands.describe(target="企業名", shares="売る株数（100株単位）")
+    @app_commands.describe(target="企業名", shares="売る株数（10株単位）")
     @app_commands.autocomplete(target=target_autocomplete)
     async def sell(self, interaction: discord.Interaction, target: str, shares: int):
         user_id = str(interaction.user.id)
-        if shares <= 0 or shares % 100 != 0:
-            return await interaction.response.send_message("❌ 売る株数は100株単位できつ！", ephemeral=True)
+        if shares <= 0 or shares % 10 != 0:
+            return await interaction.response.send_message("❌ 売る株数は10株単位できつ！", ephemeral=True)
         if target not in self.market:
             return await interaction.response.send_message("❌ 無効な企業名きつ", ephemeral=True)
 
@@ -201,7 +201,7 @@ class Invest(commands.Cog):
         plt.figure(figsize=(6, 4))
         plt.plot(times, prices, marker="o", linestyle="-")
         plt.title(f"{target} の株価履歴", fontproperties=font_prop)
-        plt.xlabel("時間（JST）", fontproperties=font_prop)
+        plt.xlabel("時間", fontproperties=font_prop)
         plt.ylabel("株価", fontproperties=font_prop)
         plt.xticks(rotation=45, fontproperties=font_prop)
         plt.yticks(fontproperties=font_prop)
