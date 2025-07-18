@@ -203,19 +203,22 @@ class Gacha(commands.Cog):
         await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="gacha_ranking", description="ガチャの回数または図鑑埋まりランキングを表示するきつ")
-    @app_commands.describe(mode="times or index")
-    async def gacha_ranking(self, interaction: discord.Interaction, mode: str):
+    @app_commands.choices(mode=[
+        app_commands.Choice(name="回数ランキング", value="times"),
+        app_commands.Choice(name="図鑑埋まりランキング", value="index")
+    ])
+    async def gacha_ranking(self, interaction: discord.Interaction, mode: app_commands.Choice[str]):
         await interaction.response.defer()
 
         items = load_items()
         stats = load_gacha_stats()
         ranking = []
 
-        if mode == "times":
+        if mode.value == "times":
             ranking = sorted(stats.items(), key=lambda x: x[1], reverse=True)
             title = "🎲 ガチャ回数ランキング"
             lines = [f"{i+1}. <@{uid}>：{count}回" for i, (uid, count) in enumerate(ranking[:10])]
-        elif mode == "index":
+        elif mode.value == "index":
             for uid, user_items in items.items():
                 owned = sum(1 for name in user_items if user_items[name] > 0)
                 ranking.append((uid, owned))
@@ -223,7 +226,7 @@ class Gacha(commands.Cog):
             title = "📖 図鑑埋まりランキング"
             lines = [f"{i+1}. <@{uid}>：{count}種" for i, (uid, count) in enumerate(ranking[:10])]
         else:
-            await interaction.followup.send("`mode` は `times` か `index` のどちらかを指定してください。", ephemeral=True)
+            await interaction.followup.send("ランキング種別が不正です。", ephemeral=True)
             return
 
         embed = discord.Embed(title=title, description="\n".join(lines), color=discord.Color.gold())

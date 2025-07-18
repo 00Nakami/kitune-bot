@@ -79,7 +79,8 @@ class Help(commands.Cog):
             value=(
                 "`/gacha` - ガチャを引くきつ\n"
                 "`/gacha_list` - ガチャの確率一覧を表示するきつ\n"
-                "`/gacha_index` - ガチャで出たアイテムの図鑑を表示するきつ"
+                "`/gacha_index` - ガチャで出たアイテムの図鑑を表示するきつ\n"
+                "`/gacha_ranking` - ガチャを回した回数・埋まっている図鑑の数でランキングを表示するきつ"
             ),
             inline=False
         )
