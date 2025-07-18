@@ -17,7 +17,7 @@ import give
 from sansuu_easy import setup_sansuu_easy
 from sansuu_normal import setup_sansuu_normal
 from sansuu_hard import setup_sansuu_hard
-from data import load_all_data, get_quotes, add_quote
+from data import load_all_data
 from avatar import setup_avatar
 from dentaku import setup_dentaku
 from giveaway import Giveaway
@@ -52,10 +52,6 @@ def run_flask():
 @bot.event
 async def on_ready():
     await bot.add_cog(Giveaway(bot))
-
-    # from tts import setup as setup_tts
-    # await setup_tts(bot)
-
     await setup_roulette(bot)
 
     try:
@@ -77,6 +73,11 @@ async def on_ready():
         await bot.load_extension("invest")
     except Exception as e:
         print(f"❌ invest の読み込みに失敗: {e}")
+
+    try:
+        await bot.load_extension("gacha")
+    except Exception as e:
+        print(f"❌ gacha の読み込みに失敗: {e}")
 
     await bot.tree.sync()
     print("✅ スラッシュコマンドを再同期したきつ")
