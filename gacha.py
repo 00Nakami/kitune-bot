@@ -220,11 +220,20 @@ class Gacha(commands.Cog):
             lines = [f"{i+1}. <@{uid}>：{count}回" for i, (uid, count) in enumerate(ranking[:10])]
         elif mode.value == "index":
             for uid, user_items in items.items():
-                owned = sum(1 for name in user_items if user_items[name] > 0)
+                owned = 0
+                for name in user_items:
+                    try:
+                        if int(user_items[name]) > 0:
+                          owned += 1
+                    except Exception:
+                        pass
                 ranking.append((uid, owned))
             ranking.sort(key=lambda x: x[1], reverse=True)
             title = "📖 図鑑埋まりランキング"
             lines = [f"{i+1}. <@{uid}>：{count}種" for i, (uid, count) in enumerate(ranking[:10])]
+
+            if not lines:
+                lines = ["❔ データが見つかりませんでした。"]
         else:
             await interaction.followup.send("ランキング種別が不正です。", ephemeral=True)
             return
