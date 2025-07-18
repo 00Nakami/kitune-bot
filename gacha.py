@@ -78,8 +78,8 @@ class Gacha(commands.Cog):
     async def gacha(self, interaction: discord.Interaction, number: int = 1):
         await interaction.response.defer()
 
-        number = max(1, min(100, number))
-        cost = 100 * number
+        number = max(1, min(1000, number))
+        cost = 1000 * number
         user_id = interaction.user.id
 
         coin = get_coin(user_id)
