@@ -73,8 +73,8 @@ class Gacha(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="gacha", description="にゃんにゃんを使ってガチャを引くきつ（1回100にゃんにゃん）")
-    @app_commands.describe(number="引く回数（最大100）")
+    @app_commands.command(name="gacha", description="にゃんにゃんを使ってガチャを引くきつ（1回1000にゃんにゃん）")
+    @app_commands.describe(number="引く回数（最大1000）")
     async def gacha(self, interaction: discord.Interaction, number: int = 1):
         await interaction.response.defer()
 
