@@ -11,7 +11,6 @@ from flask import Flask
 # モジュールのインポート
 from janken import setup_janken
 from nyan import setup_nyan
-from slot import setup_slot
 import bj
 import give
 from sansuu_easy import setup_sansuu_easy
@@ -87,7 +86,6 @@ async def on_ready():
 async def setup_all_commands():
     setup_janken(bot)
     setup_nyan(bot)
-    setup_slot(bot)
     bj.setup_bj(bot)
     await give.setup_give(bot)
     setup_sansuu_easy(bot)
